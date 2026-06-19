@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>OLS vs.&nbsp;TRU-OLS - SDY3080</title>
+<title>ImmPort – OLS vs.&nbsp;TRU-OLS - SDY3080</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -81,7 +81,7 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-fixed quarto-light">
+<body class="nav-fixed fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -102,7 +102,7 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item dropdown ">
@@ -142,23 +142,58 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
-    </div>
+    
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
 
-
-
-
-<p><img src="images/WebsiteBanner.png" class="img-fluid" style="width:100.0%"></p>
-<div style="text-align: right;">
-<p><a href="https://www.gnu.org/licenses/agpl-3.0.en.html"><img src="https://img.shields.io/badge/license-AGPLv3-blue.png" class="img-fluid" alt="AGPL-3.0"></a> <a href="http://creativecommons.org/licenses/by-sa/4.0/"><img src="https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg" class="img-fluid" alt="CC BY-SA 4.0"></a></p>
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ImmPort</h1>
 </div>
-<p>Example Unmixing Walk-Through using the ImmPort SDY3080 SFC dataset from Rach et al.&nbsp;2025, <em>Frontiers in Immunology</em></p>
-<div style="text-align: right;">
-<p><a href="https://www.gnu.org/licenses/agpl-3.0.en.html"><img src="https://www.gnu.org/graphics/agplv3-with-text-162x68.png" class="img-fluid" alt="AGPL-3.0"></a> <a href="http://creativecommons.org/licenses/by-sa/4.0/"><img src="https://licensebuttons.net/l/by-sa/4.0/88x31.png" class="img-fluid" alt="CC BY-SA 4.0"></a></p>
-</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Navigate to the <a href="https://www.immport.org/shared/search?text=SDY3080">ImmPort repository</a>. You will need to create a free account, login, and go through the two-factor authentication process before being able to download dataset.</p>
+<p>Once through the login process, search for <a href="https://www.immport.org/shared/search?text=SDY3080">SDY3080</a>, which is the SFC dataset associated with our <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1628145/full">Rach et al.&nbsp;2025</a> <em>Frontiers in Immunology</em> paper looking at Cord Blood Innate-Like T cell responses in neonates born to healthy women and women living with HIV. The full-stained cord blood samples were stimulated for intracellular cytokines with PMA-ionomycin, and then stained with a 29-fluorophore spectral flow cytometry panel.</p>
+<p><img src="images/00_SDY3080.png" class="img-fluid"></p>
+<p>Proceed to select the SDY3080 repository</p>
+<p><img src="images/01_ClickSDY3080.png" class="img-fluid"></p>
+<p>And from there select the Study Package from web option</p>
+<p><img src="images/02_StudyPackageWeb.png" class="img-fluid"></p>
+<p>Proceed into the Results Folder</p>
+<p><img src="images/03_ResultsFolder.png" class="img-fluid"></p>
+<p>Proceed into the Flow Cytometry Results sub folder</p>
+<p><img src="images/04_FlowCytometryFolder.png" class="img-fluid"></p>
+<p>Change the number of displayed files to maxinum</p>
+<p><img src="images/05_ChangePageDisplay.png" class="img-fluid"></p>
+<p>Proceed to select the files of interest. The ILT_00 was a collection of bead single-color controls acquired before the experimental series start. The first experiment is denoted by ILT_01, and consist of the single color reference controls, specimen specific by condition unstained samples, and then the full-stained samples (Ctrl, Ctrl Tetramer, PMA)</p>
+<p><img src="images/06_ILT00and01.png" class="img-fluid"></p>
+<p>Proceed to the Download Cart option</p>
+<p><img src="images/07_DownloadCart.png" class="img-fluid"></p>
+<p>Agree to the Download</p>
+<p><img src="images/08_YesDownload.png" class="img-fluid"></p>
+<p>Wait for the download to begin</p>
+<p><img src="images/09_WaitingScreen.png" class="img-fluid"></p>
+<p>If successful, save the folder to your desired location. Then proceed to extract the contents</p>
+<p><img src="images/10_ExtractZippedFolder.png" class="img-fluid"></p>
+<p>For our walk-through, we are choosing to organize the extracted out files directly under the following folders</p>
+<p><img src="images/11_DataFolderOrg.png" class="img-fluid"></p>
+<p>And here is an example of the original file sizes</p>
+<p><img src="images/12_OG-SC-Cell-Size.png" class="img-fluid"></p>
+<p>And an example of the original file sizes for the bead controls.</p>
+<p><img src="images/13_OG-SC-Bead-Size.png" class="img-fluid"></p>
 
 
 

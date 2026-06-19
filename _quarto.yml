@@ -3,6 +3,7 @@ project:
   output-dir: docs
   render: 
     - index.qmd
+    - ImmPort.qmd
 website:
   google-analytics: "G-LZ35J3XE4D"
   announcement: 
@@ -18,7 +19,11 @@ website:
     background: white
     left:
       - text: "About"
-        href: index.qmd     
+        href: index.qmd  
+      - text: "Walk-through"
+        menu:
+          - text: "ImmPort"
+            href: ImmPort.qmd   
     right:
     - icon: youtube
       href: https://www.youtube.com/@CytometryInR

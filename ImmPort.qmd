@@ -1,0 +1,62 @@
+---
+title: "ImmPort"
+format: html
+---
+
+Navigate to the [ImmPort repository](https://www.immport.org/shared/search?text=SDY3080). You will need to create a free account, login, and go through the two-factor authentication process before being able to download dataset. 
+
+Once through the login process, search for [SDY3080](https://www.immport.org/shared/search?text=SDY3080), which is the SFC dataset associated with our [Rach et al. 2025](https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1628145/full) *Frontiers in Immunology* paper looking at Cord Blood Innate-Like T cell responses in neonates born to healthy women and women living with HIV. The full-stained cord blood samples were stimulated for intracellular cytokines with PMA-ionomycin, and then stained with a 29-fluorophore spectral flow cytometry panel. 
+
+![](images/00_SDY3080.png)
+
+Proceed to select the SDY3080 repository
+
+![](images/01_ClickSDY3080.png)
+
+And from there select the Study Package from web option
+
+![](images/02_StudyPackageWeb.png)
+
+Proceed into the Results Folder
+
+![](images/03_ResultsFolder.png)
+
+Proceed into the Flow Cytometry Results sub folder
+
+![](images/04_FlowCytometryFolder.png)
+
+Change the number of displayed files to maxinum
+
+![](images/05_ChangePageDisplay.png)
+
+Proceed to select the files of interest. The ILT_00 was a collection of bead single-color controls acquired before the experimental series start. The first experiment is denoted by ILT_01, and consist of the single color reference controls, specimen specific by condition unstained samples, and then the full-stained samples (Ctrl, Ctrl Tetramer, PMA)
+
+![](images/06_ILT00and01.png)
+
+Proceed to the Download Cart option
+
+![](images/07_DownloadCart.png)
+
+Agree to the Download
+
+![](images/08_YesDownload.png)
+
+Wait for the download to begin
+
+![](images/09_WaitingScreen.png)
+
+If successful, save the folder to your desired location. Then proceed to extract the contents
+
+![](images/10_ExtractZippedFolder.png)
+
+For our walk-through, we are choosing to organize the extracted out files directly under the following folders
+
+![](images/11_DataFolderOrg.png)
+
+And here is an example of the original file sizes
+
+![](images/12_OG-SC-Cell-Size.png)
+
+And an example of the original file sizes for the bead controls. 
+
+![](images/13_OG-SC-Bead-Size.png)

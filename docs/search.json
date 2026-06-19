@@ -1,5 +1,12 @@
 [
   {
+    "objectID": "ImmPort.html",
+    "href": "ImmPort.html",
+    "title": "ImmPort",
+    "section": "",
+    "text": "Navigate to the ImmPort repository. You will need to create a free account, login, and go through the two-factor authentication process before being able to download dataset.\nOnce through the login process, search for SDY3080, which is the SFC dataset associated with our Rach et al. 2025 Frontiers in Immunology paper looking at Cord Blood Innate-Like T cell responses in neonates born to healthy women and women living with HIV. The full-stained cord blood samples were stimulated for intracellular cytokines with PMA-ionomycin, and then stained with a 29-fluorophore spectral flow cytometry panel.\n\nProceed to select the SDY3080 repository\n\nAnd from there select the Study Package from web option\n\nProceed into the Results Folder\n\nProceed into the Flow Cytometry Results sub folder\n\nChange the number of displayed files to maxinum\n\nProceed to select the files of interest. The ILT_00 was a collection of bead single-color controls acquired before the experimental series start. The first experiment is denoted by ILT_01, and consist of the single color reference controls, specimen specific by condition unstained samples, and then the full-stained samples (Ctrl, Ctrl Tetramer, PMA)\n\nProceed to the Download Cart option\n\nAgree to the Download\n\nWait for the download to begin\n\nIf successful, save the folder to your desired location. Then proceed to extract the contents\n\nFor our walk-through, we are choosing to organize the extracted out files directly under the following folders\n\nAnd here is an example of the original file sizes\n\nAnd an example of the original file sizes for the bead controls."
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "OLS vs. TRU-OLS - SDY3080",
