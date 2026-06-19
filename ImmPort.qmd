@@ -60,3 +60,21 @@ And here is an example of the original file sizes
 And an example of the original file sizes for the bead controls. 
 
 ![](images/13_OG-SC-Bead-Size.png)
+
+As we expect for raw .fcs files with > 3 million events, the .fcs files are rather large
+
+![](images/14_OG_Samples_Size.png)
+
+And for this dataset, there are specimen-matched unstaineds for both stimulation conditions
+
+![](images/15_OG_Unstaineds_Size.png)
+
+Occasionally, when downloading via web, ImmPort will fail out on the attempt (see error message below). You can still click individually on the download arrow next to each file to download individually if this occurs
+
+![](images/16_TooLargeError.png)
+
+Vs. if the combined files are under 1 GB, they don't require the extension, and download proceeds normally. 
+
+![](images/17_SuccessSmallerSets.png)
+
+There are additional ways to download via the API which are outside of todays scope. 
