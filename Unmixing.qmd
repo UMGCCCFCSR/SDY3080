@@ -91,10 +91,53 @@ Template <- Template |> mutate(
   )
 
 StoreHere <- file.path(OutputLocation, "BeadMatch.csv")
-write.csv(Template, StoreHere, row.names=TRUE)
+write.csv(Template, StoreHere, row.names=FALSE)
 ```
 
 ```{r}
+StoreHere <- file.path(OutputLocation, "BeadMatch.csv")
+BeadMatchTemplate <- read.csv(StoreHere, check.names=FALSE)
+```
+
+```{r}
+BeadMatchTemplate |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
+     ungroup() |> filter(Count > 1) |> pull(Fluorophore) # Spot duplicated fluorophore references
+
+KeptBeads <- BeadMatchTemplate |>
+     filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_Dump_CD19 Pacific Blue (Beads).1237120.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 Alexa Fluor 488 (Beads).1237106.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 Alexa Fluor 647 (Beads).1237107.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 FITC (Beads).1237108.fcs")  
+
+KeptBeads |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
+     ungroup() |> filter(Count > 1) |> pull(Fluorophore) # No duplicates
+```
+
+```{r}
+template <- KeptBeads
+gs <- BeadsSC_GatingSet
+subset <- "scatter"
+
+InitialUnmixingGates <- function(template, gs, subset, minpercentile=0.90, maxpercentile=0.99){
+
+    These <- template |> select(name, Fluorophore, Detector)
+    DetectorsPresent <- These |> filter(!is.na(Detector) & Detector != "")
+
+    gs_index <- match(DetectorsPresent$name, sampleNames(gs))
+    DetectorsPresent$gs_index <- gs_index
+
+    # Fluorophore becomes filterId
+    # Detector becomes dims
+    # subset indicates parent gate
+    # minpercentile forms lower end of the span
+    # maxpercentile forms upper end of the span
+
+
+
+
+
+}
+
 
 ```
 
