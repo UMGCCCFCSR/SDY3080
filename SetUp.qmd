@@ -1,0 +1,213 @@
+---
+title: "Set Up"
+author: "David Rach"
+date: 06-19-2026
+format:
+  html:
+    toc: true
+    toc-depth: 5
+execute:
+  echo: true
+---
+
+![](/images/WebsiteBanner.png)
+
+::: {style="text-align: right;"}
+[![AGPL-3.0](https://img.shields.io/badge/license-AGPLv3-blue)](https://www.gnu.org/licenses/agpl-3.0.en.html) [![CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-sa/4.0/)
+:::
+
+# Getting Started
+
+Now that we have downloaded the .fcs files from ImmPort, we will need to do some basic file cleanup to remove debris, doublets, etc. 
+
+As always, start by loading the required R packages via the `library()` call. 
+
+```{r}
+library(flowWorkspace)
+library(flowGate)
+library(dplyr)
+library(purrr)
+```
+
+Next, activate the `Downsampling()` function that was created as part of [Week 10](/course/10_Downsampling/index.qmd) of the course.
+
+```{r}
+RFolder <- file.path("R")
+MyFunctions <- list.files(RFolder, full.names=TRUE)
+purrr::walk(.x=MyFunctions, .f=source)
+```
+
+With this done, specify your input file.path and output file.paths 
+
+```{r}
+#StorageLocation <- file.path("course", "community", "TRU-OLS", "data")
+StorageLocation <- file.path("data", "SDY3080")
+
+#OutputLocation <- file.path("course", "community", "TRU-OLS", "outputs")
+OutputLocation <- file.path("outputs")
+```
+
+Then, designate which folder you want to clean up. 
+
+```{r}
+Folders <- list.files(StorageLocation, full.names=TRUE)
+
+Samples_FullStained <- Folders[1] # Full-Stained # Don't Touch Yet
+Beads_SC <- Folders[2] # Single-color Beads
+Cells_SC <- Folders[3] # Single-color Cells
+Cells_Unstained <- Folders[4] # Unstained Cells
+```
+
+And proceed to load in the .fcs files to a GatingSet. 
+
+```{r}
+#| eval: TRUE
+
+# Beads Single Colors
+Beads_files <- list.files(Beads_SC, pattern=".fcs",
+ full.names=TRUE, recursive=TRUE)
+
+BeadsSC_cytoset <- load_cytoset_from_fcs(Beads_files,
+ truncate_max_range=FALSE, transformation=FALSE)
+
+BeadsSC_GatingSet <- GatingSet(BeadsSC_cytoset)
+```
+
+```{r}
+#| eval: TRUE
+
+# Cells Single Colors
+CellsSC_files <- list.files(Cells_SC, pattern=".fcs",
+ full.names=TRUE, recursive=TRUE)
+
+CellsSC_cytoset <- load_cytoset_from_fcs(CellsSC_files,
+ truncate_max_range=FALSE, transformation=FALSE)
+
+CellsSC_GatingSet <- GatingSet(CellsSC_cytoset)
+```
+
+```{r}
+#| eval: TRUE
+
+# Cells Single Colors
+Unstained_files <- list.files(Cells_Unstained, pattern=".fcs",
+ full.names=TRUE, recursive=TRUE)
+
+Unstained_cytoset <- load_cytoset_from_fcs(Unstained_files,
+ truncate_max_range=FALSE, transformation=FALSE)
+
+Unstained_GatingSet <- GatingSet(Unstained_cytoset)
+```
+
+# Initial Gates
+
+As we will be working with raw .fcs files today, we do not need to transform.
+
+Next, we will create gates using the `flowGate` package, specifically via the iteration table.
+
+```{r}
+#| eval: TRUE
+
+BeadGatingTable <- tibble::tribble(
+  ~filterId,    ~dims,                          ~subset,  
+  "scatter",    list("FSC-A", "SSC-A"),      "root",     
+  "singlets",   list("FSC-A", "FSC-H"),          "scatter"
+)
+
+CellGatingTable <- tibble::tribble(
+  ~filterId,    ~dims,                          ~subset,      
+  "singlets",   list("FSC-A", "FSC-H"),          "root",  
+  "nonRBCs",     list("SSC-A", "SSC-B-A"),    "singlets",
+  "scatter",    list("FSC-A", "SSC-A"),      "nonRBCs",  
+)
+```
+
+
+We can then run the following line of code, and proceed to sequentially draw the gates via the ShinyApp
+
+```{r}
+#| eval: FALSE
+
+# Beads Single Colors
+
+flowGate::gs_apply_gating_strategy(BeadsSC_GatingSet, gating_strategy = BeadGatingTable)
+
+gs_to_openCyto(gs=BeadsSC_GatingSet, sample=1, outpath="outputs",
+ filename = "BeadSetUpGates")
+
+gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="scatter")
+gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="singlets")
+
+save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS.gs")
+```
+
+```{r}
+#| eval: FALSE
+
+# Cells Single Colors
+
+flowGate::gs_apply_gating_strategy(CellsSC_GatingSet, gating_strategy = CellGatingTable)
+
+gs_to_openCyto(gs=CellsSC_GatingSet, sample=1, outpath="outputs",
+ filename = "CellsSCs_SetUpGates")
+
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="singlets")
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="nonRBCs")
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="scatter")
+
+pd <- pData(CellsSC_GatingSet)
+pd |> mutate(Row = dplyr::row_number())
+
+gs_apply_gate_check(gs=CellsSC_GatingSet[24], gate="scatter") # Adjust to Monocytes # CD14 PacBlue
+gs_apply_gate_check(gs=CellsSC_GatingSet[31], gate="scatter") # Adjust to Dead # Zombie NIR
+gs_apply_gate_check(gs=CellsSC_GatingSet[32], gate="scatter") # Adjust to Dead # Zombie NIR PMA-stimulated
+
+save_gs(CellsSC_GatingSet, "outputs/CellsSCs_GS.gs")
+```
+
+```{r}
+#| eval: FALSE
+
+# Unstained
+
+flowGate::gs_apply_gating_strategy(Unstained_GatingSet, gating_strategy = CellGatingTable)
+
+gs_to_openCyto(gs=Unstained_GatingSet, sample=1, outpath="outputs",
+ filename = "CellsUnstained_SetUpGates")
+
+gs_apply_gate_check(gs=Unstained_GatingSet, gate="singlets")
+gs_apply_gate_check(gs=Unstained_GatingSet, gate="nonRBCs")
+gs_apply_gate_check(gs=Unstained_GatingSet, gate="scatter")
+
+pd <- pData(Unstained_GatingSet)
+pd |> mutate(Row = dplyr::row_number())
+
+#gs_apply_gate_check(gs=Unstained_GatingSet[24], gate="scatter") 
+
+save_gs(Unstained_GatingSet, "outputs/CellsUnstained_GS.gs")
+```
+
+::: {style="text-align: right;"}
+[![AGPL-3.0](https://www.gnu.org/graphics/agplv3-with-text-162x68.png)](https://www.gnu.org/licenses/agpl-3.0.en.html) [![CC BY-SA 4.0](https://licensebuttons.net/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
+:::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

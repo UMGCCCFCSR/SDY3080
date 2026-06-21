@@ -1,0 +1,191 @@
+---
+title: "Unmixing"
+author: "David Rach"
+date: 06-19-2026
+format:
+  html:
+    toc: true
+    toc-depth: 5
+execute:
+  echo: true
+---
+
+```{r}
+library(flowWorkspace)
+library(flowGate)
+library(dplyr)
+library(purrr)
+library(stringr)
+```
+
+```{r}
+devtools::document("/home/david/Documents/Luciernaga")
+devtools::load_all("/home/david/Documents/Luciernaga")
+```
+
+```{r}
+#StorageLocation <- file.path("course", "community", "TRU-OLS", "data")
+StorageLocation <- file.path("data", "SDY3080")
+
+#OutputLocation <- file.path("course", "community", "TRU-OLS", "outputs")
+OutputLocation <- file.path("outputs")
+```
+
+```{r}
+BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS.gs")
+```
+
+```{r}
+pData(BeadsSC_GatingSet)
+```
+
+# Metadata
+
+```{r}
+bead_pd <- pData(BeadsSC_GatingSet)
+
+Updated_bead_pd <- bead_pd |> mutate(
+    raw = str_extract(name, "(?<=DR_)[^(]+(?=\\()"), 
+    Antigen = raw |>
+      str_trim() |>
+      str_extract("^\\S+"), 
+    Fluorophore = raw |>
+      str_trim() |>
+      str_remove("^\\S+\\s+"), 
+    Type = name |>
+      str_extract("(?<=\\()([^)]+)(?=\\))"),
+    raw = NULL
+  )
+
+Updated_bead_pd <- Updated_bead_pd |> relocate(Type, .after="Fluorophore")
+
+Updated_bead_pd <- Updated_bead_pd |> mutate(
+    Antigen = case_when(
+      str_detect(name, "BeadsUnstained") ~ NA_character_,
+      .default = Antigen
+    ),
+    
+    Fluorophore = case_when(
+      str_detect(name, "BeadsUnstained") ~ "BeadUnstained",
+      .default = Fluorophore
+    )
+  )
+
+Updated_bead_pd <- Updated_bead_pd |> 
+  mutate(Fluorophore = case_when(
+    Fluorophore == "PE-Vio770" ~ "PE-Vio 770",
+    Fluorophore == "PE-Dazzle594" ~ "PE-Dazzle 594",
+    TRUE ~ Fluorophore
+  ))
+
+pData(BeadsSC_GatingSet) <- Updated_bead_pd
+pData(BeadsSC_GatingSet)
+```
+
+```{r}
+Template <- pData(BeadsSC_GatingSet)
+Template <- Template |> mutate(Detector="", Negative="BeadUnstained")
+
+Template <- Template |> mutate(
+    Detector = map_chr(Fluorophore, \(f) DetectorGuess(x = f, NumberDetectors = 64))
+  )
+
+StoreHere <- file.path(OutputLocation, "BeadMatch.csv")
+write.csv(Template, StoreHere, row.names=TRUE)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Previous Code
+
+And lets save for now
+
+```{r}
+#| eval: FALSE
+
+StorageLocationAndName <- file.path(StorageLocation, "BeadsGS.gs")
+save_gs(SFC_GatingSet, StorageLocationAndName)
+```
+
+
+Once the gates are drawn, we can quickly validate that the gate placements will suffice for what we are trying to accomplish today. We can use the `Utility_UnityPlots()` from the `Luciernaga` package to compare the same gate across all specimens
+
+
+```{r}
+#| eval: FALSE
+library(Luciernaga)
+
+Plot <- Utility_UnityPlot(x="FSC-A", y="FSC-H",
+ GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
+ removestrings=".fcs", marginsubset="root", gatesubset="singlets", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
+
+Plot2 <- Utility_UnityPlot(x="SSC-A", y="SSC-B-A",
+ GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
+ removestrings=".fcs", marginsubset="singlets", gatesubset="nonRBCs", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
+
+Plot3 <- Utility_UnityPlot(x="FSC-A", y="SSC-A",
+ GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
+ removestrings=".fcs", marginsubset="singlets", gatesubset="scatter", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
+```
+
+![](images/Singlets1.png)
+
+![](images/Singlets2.png)
+
+![](images/nonRBCs1.png)
+
+![](images/nonRBCs2.png)
+
+![](images/Scatter1.png)
+
+![](images/Scatter2.png)
+
+With the gates reasonably enough placed (except for the Full-Stained 1 specimen), lets proceed and see what we have for counts. 
+
+```{r}
+#| eval: FALSE
+Counts <- gs_pop_get_count_fast(SFC_GatingSet, "count")
+Counts$Population <- basename(Counts$Population)
+Counts |> filter(Population %in% "scatter")
+```
+
+![](images/00_Counts.png)
+
+For a raw .fcs file from a 5-laser Cytek Aurora, downsampling to 17500 cells puts us just under the 5 MB limit. Seeing as we have enough cells, lets proceed to export out the downsampled .fcs files to our output folder. 
+
+```{r}
+#| eval: FALSE
+purrr::walk(.x=SFC_GatingSet, subset="scatter", .f=Downsampling,
+ DownsampleCount=17500, addon="scatter", returnType="fcs",
+ StorageLocation=OutputLocation)
+```
+
+# Proceeding
+
+The resulting files are now under 5 MB. I proceeded to remove the original ones from the "data" folder, and replaced them with the files from the outputs folder. These were then transferred to GitHub for use in this walk-through example.
+
+![](images/00_FinalDownsampled.png)
+
+To return to where you were in the TRU-OLS walk-through, click [here](/course/community/TRU-OLS/index.qmd#ols-unmixing-via-luciernaga)
+
+::: {style="text-align: right;"}
+[![AGPL-3.0](https://www.gnu.org/graphics/agplv3-with-text-162x68.png)](https://www.gnu.org/licenses/agpl-3.0.en.html) [![CC BY-SA 4.0](https://licensebuttons.net/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
+:::
