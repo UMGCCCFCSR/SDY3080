@@ -114,32 +114,21 @@ KeptBeads |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
 ```
 
 ```{r}
-template <- KeptBeads
-gs <- BeadsSC_GatingSet
-subset <- "scatter"
+devtools::document("/home/david/Documents/Luciernaga")
+devtools::load_all("/home/david/Documents/Luciernaga")
 
-InitialUnmixingGates <- function(template, gs, subset, minpercentile=0.90, maxpercentile=0.99){
-
-    These <- template |> select(name, Fluorophore, Detector)
-    DetectorsPresent <- These |> filter(!is.na(Detector) & Detector != "")
-
-    gs_index <- match(DetectorsPresent$name, sampleNames(gs))
-    DetectorsPresent$gs_index <- gs_index
-
-    # Fluorophore becomes filterId
-    # Detector becomes dims
-    # subset indicates parent gate
-    # minpercentile forms lower end of the span
-    # maxpercentile forms upper end of the span
-
-
-
-
-
-}
-
-
+InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets")
 ```
+
+# Checking Spans
+
+```{r}
+Dataset <- flowWorkspace::gs_pop_get_count_fast(BeadsSC_GatingSet)
+#View(Dataset)
+
+gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810")
+```
+
 
 
 
