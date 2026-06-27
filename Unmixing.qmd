@@ -12,13 +12,15 @@ execute:
 
 ```{r}
 library(flowWorkspace)
-library(flowGate)
+#library(flowGate)
 library(dplyr)
 library(purrr)
 library(stringr)
 ```
 
 ```{r}
+devtools::document("/home/david/Documents/flowGate")
+devtools::load_all("/home/david/Documents/flowGate")
 devtools::document("/home/david/Documents/Luciernaga")
 devtools::load_all("/home/david/Documents/Luciernaga")
 ```
@@ -42,6 +44,7 @@ pData(BeadsSC_GatingSet)
 # Metadata
 
 ```{r}
+#| eval: TRUE
 bead_pd <- pData(BeadsSC_GatingSet)
 
 Updated_bead_pd <- bead_pd |> mutate(
@@ -113,7 +116,37 @@ KeptBeads |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
      ungroup() |> filter(Count > 1) |> pull(Fluorophore) # No duplicates
 ```
 
+
 ```{r}
+TheGatingTable <- tibble::tribble(
+  ~filterId,    ~dims,                          ~subset,      
+  "APC-Fire 810",   list("R8-A", "V7-A"),     "singlets")
+
+flowGate::gs_apply_gating_strategy(BeadsSC_GatingSet, gating_strategy = TheGatingTable, sample=16)
+
+plot(BeadsSC_GatingSet)
+
+#gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810", sample=16)
+
+TheGatingTable <- tibble::tribble(
+  ~filterId,    ~dims,                          ~subset,      
+  "APC-Fire 750",   list("R8-A"),     "singlets")
+
+flowGate::gs_apply_gating_strategy(BeadsSC_GatingSet, gating_strategy = TheGatingTable, sample=16)
+
+plot(BeadsSC_GatingSet)
+
+#gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 750", sample=16)
+```
+
+
+
+
+
+
+```{r}
+plot(BeadsSC_GatingSet)
+
 devtools::document("/home/david/Documents/Luciernaga")
 devtools::load_all("/home/david/Documents/Luciernaga")
 
@@ -126,7 +159,7 @@ InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets
 Dataset <- flowWorkspace::gs_pop_get_count_fast(BeadsSC_GatingSet)
 #View(Dataset)
 
-gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810")
+gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810", sample=16)
 ```
 
 
