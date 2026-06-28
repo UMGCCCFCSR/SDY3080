@@ -33,15 +33,18 @@ StorageLocation <- file.path("data", "SDY3080")
 OutputLocation <- file.path("outputs")
 ```
 
+# Beads Single-Colors
+
 ```{r}
-BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS.gs")
+BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS1.gs")
 ```
 
 ```{r}
 pData(BeadsSC_GatingSet)
 ```
 
-# Metadata
+
+## Metadata
 
 ```{r}
 #| eval: TRUE
@@ -125,7 +128,7 @@ devtools::load_all("/home/david/Documents/Luciernaga")
 InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets", minpercentile=0.75, maxpercentile = 0.80)
 ```
 
-# Checking Spans
+## Checking Spans
 
 ```{r}
 #| eval: false
@@ -150,14 +153,14 @@ CheckUnmixingSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, AdjustAll=TRUE)
 save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS_Amplified.gs")
 ```
 
-# Load back in
+## Load back in
 
 ```{r}
 BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS_Amplified.gs")
 ```
 
 ```{r}
-UpdatedTemplate <- RetrieveAverageSignature(template=KeptBeads, gs=BeadsSC_GatingSet)
+UpdatedTemplate <- RetrieveAverageSignature(template=KeptBeads, gs=BeadsSC_GatingSet, inverse.transform = TRUE)
 ```
 
 ```{r}
@@ -176,6 +179,148 @@ BeadFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normali
 
 ```{r}
 Plot <- VisualizeSignatures(columnname="Fluorophore", data=BeadFluorophoreSignatures,
+ Normalize=FALSE, characterColumns="Fluorophore")
+
+plotly::ggplotly(Plot)
+```
+
+# Cell Single-Colors
+
+```{r}
+CellsSC_GatingSet <- load_gs("outputs/CellsSCs_GS1.gs")
+```
+
+```{r}
+pData(CellsSC_GatingSet)
+plot(CellsSC_GatingSet)
+```
+
+
+## Metadata
+
+```{r}
+#| eval: TRUE
+cell_pd <- pData(CellsSC_GatingSet)
+
+Updated_cell_pd <- cell_pd |> mutate(
+    raw = str_extract(name, "(?<=DR_)[^(]+(?=\\()"), 
+    Antigen = raw |>
+      str_trim() |>
+      str_extract("^\\S+"), 
+    Fluorophore = raw |>
+      str_trim() |>
+      str_remove("^\\S+\\s+"), 
+    Type = name |>
+      str_extract("(?<=\\()([^)]+)(?=\\))"),
+    raw = NULL
+  )
+
+Updated_cell_pd <- Updated_cell_pd |> relocate(Type, .after="Fluorophore")
+
+Updated_cell_pd <- Updated_cell_pd |> 
+  mutate(Fluorophore = case_when(
+    Fluorophore == "PE-Vio770" ~ "PE-Vio 770",
+    Fluorophore == "PE-Dazzle594" ~ "PE-Dazzle 594",
+    TRUE ~ Fluorophore
+  ))
+
+pData(CellsSC_GatingSet) <- Updated_cell_pd
+pData(CellsSC_GatingSet)
+```
+
+```{r}
+Template <- pData(CellsSC_GatingSet)
+Template <- Template |> mutate(Detector="", Negative="CellUnstained")
+
+Template <- Template |> mutate(
+    Detector = map_chr(Fluorophore, \(f) DetectorGuess(x = f, NumberDetectors = 64))
+  )
+
+StoreHere <- file.path(OutputLocation, "CellMatch.csv")
+write.csv(Template, StoreHere, row.names=FALSE)
+```
+
+```{r}
+StoreHere <- file.path(OutputLocation, "UpdatedCellMatch.csv")
+CellMatchTemplate <- read.csv(StoreHere, check.names=FALSE)
+```
+
+```{r}
+CellMatchTemplate |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
+     ungroup() |> filter(Count > 1) |> pull(Fluorophore) # Spot duplicated fluorophore references
+
+KeptCells <- CellMatchTemplate |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Dump_CD19 Pacific Blue (Cells).1235702.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Viability_PMA Zombie NIR (Cells).1235709.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_CD3 Alexa Fluor 488 (Cells).1235688.fcs") 
+
+KeptCells |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
+     ungroup() |> filter(Count > 1) |> pull(Fluorophore) # No duplicates
+```
+
+```{r}
+plot(CellsSC_GatingSet)
+
+devtools::document("/home/david/Documents/Luciernaga")
+devtools::load_all("/home/david/Documents/Luciernaga")
+
+InitialUnmixSpanGates(template=KeptCells, gs=CellsSC_GatingSet, subset="scatter", minpercentile=0.75, maxpercentile = 0.99)
+```
+
+## Checking Spans
+
+```{r}
+CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
+```
+
+```{r}
+save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS1_Amplified.gs")
+```
+
+## Load back in
+
+```{r}
+CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS1_Amplified.gs")
+```
+
+```{r}
+UpdatedTemplate <- RetrieveAverageSignature(template=KeptCells, gs=CellsSC_GatingSet, inverse.transform = TRUE)
+```
+
+## Unstaineds
+
+```{r}
+Unstained_GatingSet <- load_gs("outputs/CellsUnstained_GS.gs")
+
+plot(Unstained_GatingSet)
+# pData(Unstained_GatingSet[9]) # Ctrl - ND006
+# pData(Unstained_GatingSet[10]) # PMA - ND006
+```
+
+```{r}
+CellUnstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+
+CellUnstained[1,1] <- "CellUnstained"
+
+CellStandin <- UpdatedTemplate |> slice(1)
+CellStandin[1,1] <- "DTR_2023_ILT_01-ND006_v1-Ctrl_Unstained.1235671.fcs"
+CellStandin[1,2] <- ""
+CellStandin[1,3] <- "CellUnstained"
+CellStandin[1,4] <- "Cells"
+CellStandin[1,5] <- ""
+CellStandin[1,7:ncol(CellStandin)] <- CellUnstained[2:ncol(CellUnstained)]
+UpdatedTemplate <- rbind(CellStandin, UpdatedTemplate)
+
+head(UpdatedTemplate, 3) # CellUnstained Row Added
+```
+
+```{r}
+CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
+```
+
+```{r}
+Plot <- VisualizeSignatures(columnname="Fluorophore", data=CellFluorophoreSignatures,
  Normalize=FALSE, characterColumns="Fluorophore")
 
 plotly::ggplotly(Plot)

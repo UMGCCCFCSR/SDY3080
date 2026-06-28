@@ -137,8 +137,20 @@ gs_to_openCyto(gs=BeadsSC_GatingSet, sample=1, outpath="outputs",
 
 gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="scatter")
 gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="singlets")
+```
 
-save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS.gs")
+```{r}
+SFC_Parameters <- colnames(BeadsSC_GatingSet)
+FluorophoresOnly <- SFC_Parameters[!stringr::str_detect(SFC_Parameters, "FSC|SSC|Time")]
+
+Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=262144,
+     pos=4.5, neg=2, widthBasis=-750)
+MyBiexTransform <- transformerList(FluorophoresOnly, Biexponential)
+transform(BeadsSC_GatingSet, MyBiexTransform)
+```
+
+```{r}
+save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS1.gs")
 ```
 
 ```{r}
@@ -161,8 +173,20 @@ pd |> mutate(Row = dplyr::row_number())
 gs_apply_gate_check(gs=CellsSC_GatingSet[24], gate="scatter") # Adjust to Monocytes # CD14 PacBlue
 gs_apply_gate_check(gs=CellsSC_GatingSet[31], gate="scatter") # Adjust to Dead # Zombie NIR
 gs_apply_gate_check(gs=CellsSC_GatingSet[32], gate="scatter") # Adjust to Dead # Zombie NIR PMA-stimulated
+```
 
-save_gs(CellsSC_GatingSet, "outputs/CellsSCs_GS.gs")
+```{r}
+SFC_Parameters <- colnames(CellsSC_GatingSet)
+FluorophoresOnly <- SFC_Parameters[!stringr::str_detect(SFC_Parameters, "FSC|SSC|Time")]
+
+Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=4194304,
+  pos=5.62, neg=0, widthBasis=-1000)
+MyBiexTransform <- transformerList(FluorophoresOnly, Biexponential)
+transform(CellsSC_GatingSet, MyBiexTransform)
+```
+
+```{r}
+save_gs(CellsSC_GatingSet, "outputs/CellsSCs_GS1.gs")
 ```
 
 ```{r}
