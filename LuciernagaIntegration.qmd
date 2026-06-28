@@ -37,127 +37,16 @@ KeptCells <- Template |>
 ```
 
 ```{r}
-template <- KeptCells
-gs <- CellsSC_GatingSet
-
-LuciernagaIntegration <- function(template, gs, AFOverlap=NULL,
- externalAF_gs = NULL, externalAF_gs_index=NULL, externalAF_gs_gate=NULL,
- excludeThese="FSC|SSC|Time|-H|-W", inverse.transform=TRUE){
-
-  if (is.null(AFOverlap)){
-    FileLocation <- system.file("extdata", package = "Luciernaga")
-    pattern = "AutofluorescentOverlaps.csv"
-    AFOverlap <- list.files(path=FileLocation, pattern=pattern,
-     full.names = TRUE)
-    AFOverlap <- read.csv(AFOverlap, check.names=FALSE)
-  } else {
-    if(!is.data.frame(AFOverlap)){
-      AFOverlap <- read.csv(AFOVerlap, check.names=FALSE)
-      } else { # No Intervention needed
-      }
-  }
-
-  These <- template |> select(name, Fluorophore, Detector)
-  DetectorsPresent <- These |> filter(!is.na(Detector) & Detector != "")
-
-  gs_index <- match(DetectorsPresent$name, sampleNames(gs))
-  DetectorsPresent$gs_index <- gs_index
-
-  GatesToAdd <- DetectorsPresent |> pull(Fluorophore)
-  SpecimenIndeces <- DetectorsPresent |> pull(gs_index)
-
-  # sampleNames(gs)
-  # sampleNames(gs[SpecimenIndeces[14]])
-
-  x <- GatesToAdd[14]
-  y <- SpecimenIndeces[14]
-
-  # Internal Function Starts Here
-
-  if (is.null(externalAF_gs)){
-    path <- gs_pop_get_parent(gs[y], x, inverse.transform=inverse.transform)
-    parentgate <- basename(path)
-    parentCS <- gs_pop_get_data(gs[y], parentgate)
-  } else {
-    parentCS <- gs_pop_get_data(externalAF_gs[externalAF_gs_index], externalAF_gs_gate)
-  }
-
-  parentData <- data.frame(exprs(parentCS[[1]]), check.names=FALSE)
-  parentData <- parentData[!stringr::str_detect(colnames(parentData), excludeThese)]
-  parentSignature <- AveragedSignature(parentData, stats="median")
-
-  # LuciernagaQC outputs
-  QCdata <- Luciernaga_QC(x=gs[y], subsets=x, AFOverlap=AFOverlap,
-   experiment="Test", condition="Test", CellAF=parentSignature) 
-
-  QCdata <- QCdata |> select(-Experiment, -Condition)
-    
-  ThePlotName <- QCdata[,1] |> unique() |> unname()
-
-  QCPlot <- VisualizeSignatures(columnname="Cluster", characterColumns = "Cluster", 
-    data=QCdata, Normalize=TRUE, plotname = ThePlotName)
-
-  CosineData <- QCdata |> select(-Sample) 
-  #Cutoff <- sum(CosineData$Count)*0.01
-  #CosineData <- CosineData |> filter(Count > Cutoff)
-
-  AmalgamateData <- QC_Amalgamate(data=CosineData, samplecolumn="Cluster",
-   normalize=TRUE, countcolumn="Count", returnType="data",
-    titlename=ThePlotName, linecolor="blue", legend=FALSE)
-
-  JustAmalgamate <- AmalgamateData |> filter(Cluster %in% "Average")
-  colnames(JustAmalgamate)[1] <- "Fluorophore"
-
-  if(GuessSimilar == TRUE){
-
-  SimilarData <- QC_WhatsThis(x="Average", columnname="Fluorophore",
-   data=JustAmalgamate, NumberHits = 10, NumberDetectors = NumberDetectors,
-   returnPlots = TRUE)
-
-  TheSimilarData <- SimilarData[[1]]
-  TheSimilarPlot <- SimilarData[[2]]
-  
-  } else {
-    SimilarData <- NULL
-    SimilarPlot <- NULL
-  }
-
-  NormalizedPlot <- QC_Amalgamate(data=CosineData, samplecolumn="Cluster",
-   normalize=TRUE, countcolumn="Count", returnType="plot",
-    titlename=ThePlotName, linecolor="blue", legend=FALSE)
-
-  HeatmapData <- CosineData |> select(Cluster, Count) |>
-     mutate(TotalCells = sum(Count, na.rm = TRUE)) |>
-     mutate(Ratio = round(Count/TotalCells, 3)) |>
-     mutate(Fluorophore=ThePlotName[[1]])
-
-  HeatmapData$Fluorophore <-  factor(HeatmapData$Fluorophore) 
-
-  HeatmapPlot <- StackedReportHeatmap(data=HeatmapData,
-   nameColumn="Fluorophore", legend="right", transpose=FALSE)
-
-  CosineData <- CosineData |> select(-Count) 
-
-  CosinePlot <- Luciernaga_Cosine(data=CosineData,
-  returntype="plot", rearrange=TRUE, limitlow=0.90, limithigh=1,
-  colorlow="navajowhite", colorhigh="tan1", legend=TRUE) +
-     labs(title="ThePlotName")
-
-  data <- Luciernaga_LinearSlices(x=gs[y], subset=x,
-   sample.name="TUBENAME", removestrings=".fcs", stats="median",
-   returntype="normalized", output="data")
-
-
-}
-
-
+LuciernagaIntegration(template=KeptCells[1:4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
 ```
-
 
 ```{r}
 Unstained_GatingSet <- load_gs("outputs/CellsUnstained_GS.gs")
+Updated <- pData(Unstained_GatingSet) |>  mutate(Type="Cells", Fluorophore="scatter",
+ Antigen="Autofluorescence", Detector="V7", Negative="NoSubtraction")
+#pData(Unstained_GatingSet) <- Updated
 
-plot(Unstained_GatingSet)
-# pData(Unstained_GatingSet[9]) # Ctrl - ND006
-# pData(Unstained_GatingSet[10]) # PMA - ND006
+LuciernagaIntegration(template=Updated[1,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+
 ```
