@@ -1,0 +1,98 @@
+---
+title: "Luciernaga Integration"
+format: html
+---
+
+```{r}
+devtools::document("/home/david/Documents/Luciernaga")
+devtools::load_all("/home/david/Documents/Luciernaga")
+```
+
+```{r}
+library(dplyr)
+library(purrr)
+library(flowWorkspace)
+```
+
+
+# Cell Single-Colors
+
+```{r}
+CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
+
+Template <- pData(CellsSC_GatingSet)
+Template <- Template |> mutate(Detector="", Negative="CellUnstained")
+
+Template <- Template |> mutate(
+    Detector = map_chr(Fluorophore, \(f) DetectorGuess(x = f, NumberDetectors = 64))
+  )
+
+KeptCells <- Template |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Dump_CD19 Pacific Blue (Cells).1235702.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Viability_PMA Zombie NIR (Cells).1235709.fcs") |>
+     filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_CD3 Alexa Fluor 488 (Cells).1235688.fcs") 
+
+# View(KeptCells)
+# plot(CellsSC_GatingSet)
+```
+
+```{r}
+template <- KeptCells
+gs <- CellsSC_GatingSet
+
+LuciernagaIntegration <- function(template, gs){
+  These <- template |> select(name, Fluorophore, Detector)
+  DetectorsPresent <- These |> filter(!is.na(Detector) & Detector != "")
+
+  gs_index <- match(DetectorsPresent$name, sampleNames(gs))
+  DetectorsPresent$gs_index <- gs_index
+
+  GatesToAdd <- DetectorsPresent |> pull(Fluorophore)
+  SpecimenIndeces <- DetectorsPresent |> pull(gs_index)
+
+  # sampleNames(gs)
+  # sampleNames(gs[SpecimenIndeces[14]])
+
+  x <- GatesToAdd[14]
+  y <- SpecimenIndeces[14]
+
+  ?Luciernaga_QC
+  data <- Luciernaga_QC(x=gs[y], subsets=x, sample.name="TUBENAME",
+   removestrings=".fcs", ExportType="data")
+
+  # ?Luciernaga_LinearSlices
+  data <- Luciernaga_LinearSlices(x=gs[y], subset=x, sample.name="TUBENAME",
+   removestrings=".fcs", stats="median", returntype="normalized",
+   output="data")
+  # QC_Amalgamate()
+
+
+
+  Signatures <- purrr::map2(
+    .x = SpecimenIndeces,
+    .y = GatesToAdd,
+    .f = \(x, y) GateExprsIterated(
+      gs = gs,
+      sample = x,
+      gate = y,
+      inverse.transform = inverse.transform,
+      excludeThese = excludeThese
+    )
+  )
+
+
+
+
+}
+
+
+```
+
+
+```{r}
+Unstained_GatingSet <- load_gs("outputs/CellsUnstained_GS.gs")
+
+plot(Unstained_GatingSet)
+# pData(Unstained_GatingSet[9]) # Ctrl - ND006
+# pData(Unstained_GatingSet[10]) # PMA - ND006
+```
