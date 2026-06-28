@@ -36,7 +36,7 @@ OutputLocation <- file.path("outputs")
 # Beads Single-Colors
 
 ```{r}
-BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS1.gs")
+BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS2.gs")
 ```
 
 ```{r}
@@ -150,16 +150,19 @@ CheckUnmixingSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, AdjustAll=TRUE)
 ```
 
 ```{r}
-save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS_Amplified.gs")
+save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS2_Amplified.gs")
 ```
 
 ## Load back in
 
 ```{r}
-BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS_Amplified.gs")
+BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS2_Amplified.gs")
 ```
 
 ```{r}
+#Backup <- KeptBeads
+#KeptBeads <- Backup[c(1, 9, 13),]
+
 UpdatedTemplate <- RetrieveAverageSignature(template=KeptBeads, gs=BeadsSC_GatingSet, inverse.transform = TRUE)
 ```
 
@@ -174,6 +177,10 @@ head(UpdatedTemplate, 3) # BeadUnstained Detector Values Updated
 ```
 
 ```{r}
+# Backup <- UpdatedTemplate
+# UpdatedTempalte <- Backup
+#UpdatedTemplate <- UpdatedTemplate[c(1, 9, 13),]
+
 BeadFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
 ```
 
@@ -274,16 +281,19 @@ CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
 ```
 
 ```{r}
-save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS1_Amplified.gs")
+save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS2_Amplified.gs")
 ```
 
 ## Load back in
 
 ```{r}
-CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS1_Amplified.gs")
+CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
 ```
 
 ```{r}
+#KeptCellsBackup <- KeptCells
+#KeptCells <- KeptCellsBackup[10,]
+
 UpdatedTemplate <- RetrieveAverageSignature(template=KeptCells, gs=CellsSC_GatingSet, inverse.transform = TRUE)
 ```
 
@@ -316,6 +326,9 @@ head(UpdatedTemplate, 3) # CellUnstained Row Added
 ```
 
 ```{r}
+# UpdatedTemplateBackup <-  UpdatedTemplate
+# UpdatedTemplate <- UpdatedTemplateBackup #[c(1,11),]
+
 CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
 ```
 
