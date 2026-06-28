@@ -101,6 +101,27 @@ LuciernagaIntegration <- function(template, gs, AFOverlap=NULL,
   #Cutoff <- sum(CosineData$Count)*0.01
   #CosineData <- CosineData |> filter(Count > Cutoff)
 
+  AmalgamateData <- QC_Amalgamate(data=CosineData, samplecolumn="Cluster",
+   normalize=TRUE, countcolumn="Count", returnType="data",
+    titlename=ThePlotName, linecolor="blue", legend=FALSE)
+
+  JustAmalgamate <- AmalgamateData |> filter(Cluster %in% "Average")
+  colnames(JustAmalgamate)[1] <- "Fluorophore"
+
+  if(GuessSimilar == TRUE){
+
+  SimilarData <- QC_WhatsThis(x="Average", columnname="Fluorophore",
+   data=JustAmalgamate, NumberHits = 10, NumberDetectors = NumberDetectors,
+   returnPlots = TRUE)
+
+  TheSimilarData <- SimilarData[[1]]
+  TheSimilarPlot <- SimilarData[[2]]
+  
+  } else {
+    SimilarData <- NULL
+    SimilarPlot <- NULL
+  }
+
   NormalizedPlot <- QC_Amalgamate(data=CosineData, samplecolumn="Cluster",
    normalize=TRUE, countcolumn="Count", returnType="plot",
     titlename=ThePlotName, linecolor="blue", legend=FALSE)
