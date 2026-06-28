@@ -160,6 +160,20 @@ BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS_Amplified.gs")
 UpdatedTemplate <- RetrieveAverageSignature(template=KeptBeads, gs=BeadsSC_GatingSet)
 ```
 
+```{r}
+BeadUnstained <- GateExprsIterated(gs=BeadsSC_GatingSet, sample=1,
+ gate="singlets", excludeThese="FSC|SSC|Time|-H")
+
+colnames(UpdatedTemplate)
+UpdatedTemplate[1,7:ncol(UpdatedTemplate)] <- BeadUnstained[2:ncol(BeadUnstained)]
+
+head(UpdatedTemplate, 3) # BeadUnstained Detector Values Updated
+```
+
+```{r}
+BeadFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
+```
+
 
 
 
