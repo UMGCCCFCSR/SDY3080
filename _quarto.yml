@@ -4,6 +4,8 @@ project:
   render: 
     - index.qmd
     - ImmPort.qmd
+execute:
+  freeze: true
 website:
   google-analytics: "G-LZ35J3XE4D"
   announcement: 

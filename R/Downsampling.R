@@ -45,7 +45,9 @@ Downsampling <- function(x, subset, inverse.transform=TRUE, DownsampleCount,
   OriginalDescription <- flowCore::keyword(flowFrame)
 
   OriginalName <- OriginalDescription$`GUID`
-  UpdatedName <- paste0("_", addon, ".fcs")
+  #UpdatedName <- paste0("_", addon, ".fcs")
+  UpdatedName <- paste0(addon, ".fcs")
+  
   UpdatedGUID <- sub(".fcs", UpdatedName, OriginalName) #Swtiching out .fcs for Updated Name via the sub function
   OriginalDescription$`GUID` <- UpdatedGUID
 

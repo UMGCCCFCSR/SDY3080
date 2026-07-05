@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="David Rach">
+<meta name="dcterms.date" content="2026-07-05">
 
-<title>ImmPort – OLS vs.&nbsp;TRU-OLS - SDY3080</title>
+<title>Downloading Datasets from ImmPort – OLS vs.&nbsp;TRU-OLS - SDY3080</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -81,7 +83,7 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -142,20 +144,52 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background">Background</a></li>
+  <li><a href="#walk-through" id="toc-walk-through" class="nav-link" data-scroll-target="#walk-through">Walk Through</a>
+  <ul>
+  <li><a href="#accessing-immport" id="toc-accessing-immport" class="nav-link" data-scroll-target="#accessing-immport">Accessing ImmPort</a></li>
+  <li><a href="#downloading-datasets" id="toc-downloading-datasets" class="nav-link" data-scroll-target="#downloading-datasets">Downloading Datasets</a>
+  <ul>
+  <li><a href="#retrieving-multiple-files" id="toc-retrieving-multiple-files" class="nav-link" data-scroll-target="#retrieving-multiple-files">Retrieving Multiple Files</a></li>
+  <li><a href="#retrieving-individual-files" id="toc-retrieving-individual-files" class="nav-link" data-scroll-target="#retrieving-individual-files">Retrieving Individual Files</a></li>
+  </ul></li>
+  <li><a href="#organizing-the-retrieved-files" id="toc-organizing-the-retrieved-files" class="nav-link" data-scroll-target="#organizing-the-retrieved-files">Organizing the Retrieved Files</a></li>
+  </ul></li>
+  <li><a href="#take-away" id="toc-take-away" class="nav-link" data-scroll-target="#take-away">Take Away</a></li>
+  <li><a href="#additional-resources" id="toc-additional-resources" class="nav-link" data-scroll-target="#additional-resources">Additional Resources</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">ImmPort</h1>
+<h1 class="title">Downloading Datasets from ImmPort</h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>David Rach </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 5, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -165,46 +199,128 @@ gtag('config', 'G-LZ35J3XE4D', { 'anonymize_ip': true});
 </header>
 
 
-<p>Navigate to the <a href="https://www.immport.org/shared/search?text=SDY3080">ImmPort repository</a>. You will need to create a free account, login, and go through the two-factor authentication process before being able to download dataset.</p>
-<p>Once through the login process, search for <a href="https://www.immport.org/shared/search?text=SDY3080">SDY3080</a>, which is the SFC dataset associated with our <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1628145/full">Rach et al.&nbsp;2025</a> <em>Frontiers in Immunology</em> paper looking at Cord Blood Innate-Like T cell responses in neonates born to healthy women and women living with HIV. The full-stained cord blood samples were stimulated for intracellular cytokines with PMA-ionomycin, and then stained with a 29-fluorophore spectral flow cytometry panel.</p>
+<p><img src="./images/WebsiteBanner.png" class="img-fluid"></p>
+<div style="text-align: right;">
+<p><a href="https://www.gnu.org/licenses/agpl-3.0.en.html"><img src="https://img.shields.io/badge/license-AGPLv3-blue.png" class="img-fluid" alt="AGPL-3.0"></a> <a href="http://creativecommons.org/licenses/by-sa/4.0/"><img src="https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg" class="img-fluid" alt="CC BY-SA 4.0"></a></p>
+</div>
+<p>For the YouTube livestream schedule, see <a href="https://www.youtube.com/@cytometryinr">here</a></p>
+<p>For screen-shot slides, click <a href="./course/03_InsideFCSFile/slides.qmd">here</a></p>
+<p><br></p>
+<hr>
+<section id="background" class="level1">
+<h1>Background</h1>
+<p>During weeks twelve through fourteen of the <a href="https://umgcccfcsr.github.io/CytometryInR/">Cytometry in R course</a>, we primarily focus on how to work with raw Spectral Flow Cytometry (SFC) .fcs files. During Week 12, we learn how to extract out and characterize fluorescent signatures that are present in our unmixing controls (both single-color and unstained). This is followed up on Week 13 by learning how to compare these signatures with each other, allowing us to predict how they will interact in context of a full SFC panel. Finally, in Week 14, we take the fluorescent signatures we have derived from our unmixing controls and use them to unmix full-stained samples.</p>
+<p>Due to the Cytometry in R’s course use of GitHub, we are not able to include the full-sized .fcs files due to individual file size sharing constraints. The datasets used during Week’s 12 through 14 were consequently downsampled to get around this issue. However, working with the complete datasets can provide additional insight (as well as more closely replicate the experience of working with your own datasets). This walk-through therefore contains the steps needed to both retrieve and process the original .fcs files that were used from the <a href="https://www.immport.org/">ImmPort</a> repository.</p>
+<p>ImmPort (Immunology Database and Analysis Portal) is a open access platform for research data sharing, primarily intended as a repository for datasets generated as part of <a href="https://www.nih.gov/">NIH</a> and <a href="https://www.niaid.nih.gov/">NIAID</a> funded grants. It includes many different types of immunological data, including conventional, spectral and mass cytometry datasets.</p>
+<p>We are slated to cover how to retrieve data programmatically from ImmPort via the API <a href="https://umgcccfcsr.github.io/CytometryInR/Schedule.html#databases-and-repositories">later in the course</a>, however, in the meanwhile, this walk-through will cover how to access and download individual datasets via the website portal. This can be a little bit of challenge for the un-initiated, so we will depict one of our typical workflows that can be used.</p>
+</section>
+<section id="walk-through" class="level1">
+<h1>Walk Through</h1>
+<section id="accessing-immport" class="level2">
+<h2 class="anchored" data-anchor-id="accessing-immport">Accessing ImmPort</h2>
+<p>To start, first navigate to the <a href="https://www.immport.org/">ImmPort repository</a>. The landing page at the time of writing this walk-through can be seen in the screenshot below.</p>
+<p><img src="images/000_ImmPortLandingPage.png" class="img-fluid"></p>
+<p>If this is your first time using the ImmPort repository, you will need to create a free account. The simplest way to start the process is to go ahead and click on the <a href="https://www.immport.org/auth/login">login button</a> on the upper-right hand of the screen.</p>
+<p><img src="images/000_ImmPortLandingPage.png" class="img-fluid"></p>
+<p>This will take you to the login page, which also includes the the option to register for an ImmPort account. Go ahead and select the option to register.</p>
+<p><img src="images/000_Register.png" class="img-fluid"></p>
+<p>You will then reach a page with a notice about the next steps and the need to accept ImmPort’s <a href="https://docs.immport.org/home/agreement/">terms of use</a> before being able to access the datasets. Select Continue.</p>
+<p><img src="images/000_RegisterAcceptTerms.png" class="img-fluid"></p>
+<p>You will then be prompted to fill out various fields that are needed to create your account. When complete, proceed with your account registration by selecting Register.</p>
+<p><img src="images/000_RegistrationFields.png" class="img-fluid"></p>
+<p>You will next proceed through several additional steps before completing account registration. At this point, you will end back up on the login page.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you are registering for the first time, please take some documentation screenshots of these last couple registration steps (leave blank/whiteout any important personal information) and post them to this <a href="https://github.com/UMGCCCFCSR/CytometryInR/issues/217">issue page</a>, I will update this page accordingly. Thanks! David</p>
+</div>
+</div>
+<p><img src="images/001_Login.png" class="img-fluid"></p>
+<p>Proceed to provide your loing information, and select login. You will then start the two-factor authentication process. Go to your email and retrieve the code that was sent to you.</p>
+<p><img src="images/001_CodeEmail.png" class="img-fluid"></p>
+<p>Return to the two-factor authentication screen and submit the provided code.</p>
+<p><img src="images/001_TwoFactor.png" class="img-fluid"></p>
+<p>And with that done, Congratulations! You have now both registed and logged in to ImmPort. You are now (finally) able to access and download the dataset for this example.</p>
+<p><img src="images/001_ImmPortLanding.png" class="img-fluid"></p>
+</section>
+<section id="downloading-datasets" class="level2">
+<h2 class="anchored" data-anchor-id="downloading-datasets">Downloading Datasets</h2>
+<p>As aforementioned, <a href="https://docs.immport.org/home/about/">ImmPort</a> contains many different forms of Immunological data, including conventional, spectral and mass cytometry datasets.</p>
+<p><img src="images/001_ImmPortLanding.png" class="img-fluid"></p>
+<p>The data used as examples for week’s 12 through 14 was originally from <a href="https://www.immport.org/shared/search?text=SDY3080">SDY3080</a>, which is the SFC dataset associated with our <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1628145/full">Rach et al.&nbsp;2025</a> <em>Frontiers in Immunology</em> paper looking at Cord Blood Innate-Like T cell responses in neonates born to healthy women and women living with HIV. It is one of the few spectral flow cytometry datasets currently on ImmPort to also include the raw (not-yet-unmixed) data.</p>
+<p>To get startEd, following login, proceed to look up <a href="https://www.immport.org/shared/search?text=SDY3080">SDY3080</a> in the search bar</p>
+<p><img src="images/001_SDY3080Lookup.png" class="img-fluid"></p>
+<p>You will end up in the search results page. Since we looked up based on the study accession number, it comes up right away.</p>
 <p><img src="images/00_SDY3080.png" class="img-fluid"></p>
-<p>Proceed to select the SDY3080 repository</p>
+<p>To get started accessing the data, go ahead and click on the study accession number to proceed to the study-specific landing page.</p>
 <p><img src="images/01_ClickSDY3080.png" class="img-fluid"></p>
-<p>And from there select the Study Package from web option</p>
+<p>Under Download options on the upper-right, proceed to select the Study Package (Web) option.</p>
 <p><img src="images/02_StudyPackageWeb.png" class="img-fluid"></p>
-<p>Proceed into the Results Folder</p>
+<p>You will now be taken to the studies data folder. ImmPort studies contain additional layers of metadata (which assist in the re-use of the data for purposes beyond their original intention). We will cover these in greater later on in the <a href="https://umgcccfcsr.github.io/CytometryInR/Schedule.html#databases-and-repositories">course</a>, for now, proceed to select the Results Folder.</p>
 <p><img src="images/03_ResultsFolder.png" class="img-fluid"></p>
-<p>Proceed into the Flow Cytometry Results sub folder</p>
+<p>Once within the Results folder, proceed to select the Flow_cytometry_result subfolder.</p>
 <p><img src="images/04_FlowCytometryFolder.png" class="img-fluid"></p>
-<p>Change the number of displayed files to maxinum</p>
+<section id="retrieving-multiple-files" class="level3">
+<h3 class="anchored" data-anchor-id="retrieving-multiple-files">Retrieving Multiple Files</h3>
+<p>At this point, you have reached the page where the individual .fcs files are stored. Proceed to click on the size tab a couple times to re-arrange from the largest to smallest file size to get a better sense of the dataset file sizes.</p>
+<p>Once this is done, change the option of number of files displayed to show the maxinum number of files at once (200).</p>
 <p><img src="images/05_ChangePageDisplay.png" class="img-fluid"></p>
-<p>Proceed to select the files of interest. The ILT_00 was a collection of bead single-color controls acquired before the experimental series start. The first experiment is denoted by ILT_01, and consist of the single color reference controls, specimen specific by condition unstained samples, and then the full-stained samples (Ctrl, Ctrl Tetramer, PMA)</p>
+<p>For the Week’s 12 through 14 examples, we were working with unmixing controls from the first two experiments in the SDY3080 dataset (ILT_00 and ILT_01). The ILT_00 contained a set of a bead single-color unmixing controls acquired before the experimental series start. The first actual experiment is denoted by ILT_01, and consist of the first set of cell single color reference controls; specimen-specific-condition-specific unstained unmixing controls; and full-stained samples (Ctrl_Antibody, Ctrl_Tetramer, PMA)</p>
+<p>You can select multiple files to download by clicking on the checkboxes on the left-side of the screeen.</p>
 <p><img src="images/06_ILT00and01.png" class="img-fluid"></p>
-<p>Proceed to the Download Cart option</p>
+<p>Once the specimens of interest have been selected, proceed to click on the Download Cart option.</p>
 <p><img src="images/07_DownloadCart.png" class="img-fluid"></p>
-<p>Agree to the Download</p>
+<p>You will then encounter a Confirm Download pop-up. If these were the files you intended to download, select Yes.</p>
 <p><img src="images/08_YesDownload.png" class="img-fluid"></p>
-<p>Wait for the download to begin</p>
+<p>The Preparing Download pop-up screen will then appear as your zipped folder is prepared.</p>
 <p><img src="images/09_WaitingScreen.png" class="img-fluid"></p>
-<p>If successful, save the folder to your desired location. Then proceed to extract the contents</p>
+<p>If the retrieval process is succesful, you will then be prompted to save the folder to a desired location on your computer. Go ahead and proceed to extract out the contents for subsequent use.</p>
 <p><img src="images/10_ExtractZippedFolder.png" class="img-fluid"></p>
-<p>For our walk-through, we are choosing to organize the extracted out files directly under the following folders</p>
-<p><img src="images/11_DataFolderOrg.png" class="img-fluid"></p>
-<p>And here is an example of the original file sizes</p>
-<p><img src="images/12_OG-SC-Cell-Size.png" class="img-fluid"></p>
-<p>And an example of the original file sizes for the bead controls.</p>
-<p><img src="images/13_OG-SC-Bead-Size.png" class="img-fluid"></p>
-<p>As we expect for raw .fcs files with &gt; 3 million events, the .fcs files are rather large</p>
-<p><img src="images/14_OG_Samples_Size.png" class="img-fluid"></p>
-<p>And for this dataset, there are specimen-matched unstaineds for both stimulation conditions</p>
-<p><img src="images/15_OG_Unstaineds_Size.png" class="img-fluid"></p>
-<p>Occasionally, when downloading via web, ImmPort will fail out on the attempt (see error message below). You can still click individually on the download arrow next to each file to download individually if this occurs</p>
+</section>
+<section id="retrieving-individual-files" class="level3">
+<h3 class="anchored" data-anchor-id="retrieving-individual-files">Retrieving Individual Files</h3>
+<p>Occasionally, when attempting to download via the web, ImmPort will fail out on during the attempt, resulting in an email similar to this one ending up in your inbox.</p>
 <p><img src="images/16_TooLargeError.png" class="img-fluid"></p>
-<p>Vs. if the combined files are under 1 GB, they don’t require the extension, and download proceeds normally.</p>
+<p>From our limited testing, this often appears when the combined file download size exceeds a certain size. When the total files being downloaded are under 1 GB, the extension mentioned in the email is apparently not generated, and the download proceeds normally.</p>
 <p><img src="images/17_SuccessSmallerSets.png" class="img-fluid"></p>
-<p>There are additional ways to download via the API which are outside of todays scope.</p>
+<p>Alternatively, you can download indiviudal files by selecting the download arrow next to each file to download individually if this occurs</p>
+<p><img src="images/001_IndividualFiles.png" class="img-fluid"></p>
+<p>Beyond the manual download options, there are several other ways to more efficiently download the files via the API, which are outside the scope of this smaller walk-through. We intend to cover these in greater depth in the <a href="https://umgcccfcsr.github.io/CytometryInR/Schedule.html#databases-and-repositories">future</a></p>
+</section>
+</section>
+<section id="organizing-the-retrieved-files" class="level2">
+<h2 class="anchored" data-anchor-id="organizing-the-retrieved-files">Organizing the Retrieved Files</h2>
+<p>At this point, for the walk-through, we chose to organize our retrieved files in the following manner. This simplified our ability to quickly switch between .fcs file types (single color beads or cells, unstained, full-stained) when working on the various downstream processing steps.</p>
+<p><img src="images/11_DataFolderOrg.png" class="img-fluid"></p>
+<p>A couple things to note going forward if you are following along, the file sizes of the individual cell single-color control can be seen here</p>
+<p><img src="images/12_OG-SC-Cell-Size.png" class="img-fluid"></p>
+<p>By contrast, the single-color bead controls are much smaller</p>
+<p><img src="images/13_OG-SC-Bead-Size.png" class="img-fluid"></p>
+<p>This dataset also contained specimen-matched condition-matched unstained samples that were also acquired to allow for autofluorescence signature profiling. The amount of cells used varied depending on how many cells were left after the full-stained sample conditions had been aliquoted, but as can be seen, some of these files are quite large.</p>
+<p><img src="images/15_OG_Unstaineds_Size.png" class="img-fluid"></p>
+<p>Likewise, as anticipated, the full-stained .fcs file sizes are also large, given thatover &gt; 3 million events were acquired in an attempt to profile cord blood Innate-like T cells.</p>
+<p><img src="images/14_OG_Samples_Size.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="take-away" class="level1">
+<h1>Take Away</h1>
+<p>In this walk-through, we briefly covered how to register for an ImmPort account, how to access individual datasets, and how to download the .fcs files that were used for the Cytometry in R course during weeks 12 through 14.</p>
+<p>Beyond what we showcased here, there are a lot of additional repositories on ImmPort containing interesting cytometry datasets. Showcasing how to identify, access and download these in a more efficient manner will be the focus later on during the <a href="https://umgcccfcsr.github.io/CytometryInR/Schedule.html#databases-and-repositories">course</a>. You are however more than welcome to investigate on your own until then.</p>
+</section>
+<section id="additional-resources" class="level1">
+<h1>Additional Resources</h1>
+<p><a href="https://docs.immport.org/help/navigation/cdt/">Searching ImmPort Shared Data</a></p>
+<p><a href="https://docs.immport.org/download/">How to Download Data</a></p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
