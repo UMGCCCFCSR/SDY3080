@@ -4,14 +4,15 @@ format: html
 ---
 
 ```{r}
-devtools::document("/home/david/Documents/Luciernaga")
-devtools::load_all("/home/david/Documents/Luciernaga")
+#devtools::document("/home/david/Documents/Luciernaga")
+#devtools::load_all("/home/david/Documents/Luciernaga")
 ```
 
 ```{r}
 library(dplyr)
 library(purrr)
 library(flowWorkspace)
+library(Luciernaga)
 ```
 
 
@@ -19,6 +20,8 @@ library(flowWorkspace)
 
 ```{r}
 CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
+
+# plot(CellsSC_GatingSet)
 
 Template <- pData(CellsSC_GatingSet)
 Template <- Template |> mutate(Detector="", Negative="CellUnstained")
@@ -37,7 +40,125 @@ KeptCells <- Template |>
 ```
 
 ```{r}
-LuciernagaIntegration(template=KeptCells[1:4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+LuciernagaIntegration(template=KeptCells[1,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[2,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[3,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+LuciernagaIntegration(template=KeptCells[5,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+# Bugged
+LuciernagaIntegration(template=KeptCells[6,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[7,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[8,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[9,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[10,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+# bugged
+LuciernagaIntegration(template=KeptCells[11,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+# bugged
+LuciernagaIntegration(template=KeptCells[12,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[13,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[14,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[15,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+# bugged
+LuciernagaIntegration(template=KeptCells[16,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[17,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[18,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[19,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[20,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[21,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+```{r}
+LuciernagaIntegration(template=KeptCells[22,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+```{r}
+#| eval: FALSE
+# bugged
+LuciernagaIntegration(template=KeptCells[23,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[24,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+```{r}
+LuciernagaIntegration(template=KeptCells[25,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+```{r}
+LuciernagaIntegration(template=KeptCells[26,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+```{r}
+LuciernagaIntegration(template=KeptCells[27,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[28,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+```
+
+```{r}
+LuciernagaIntegration(template=KeptCells[29,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
 ```
 
 ```{r}
@@ -48,5 +169,65 @@ Updated <- pData(Unstained_GatingSet) |>  mutate(Type="Cells", Fluorophore="scat
 
 LuciernagaIntegration(template=Updated[1,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
   Unstained=TRUE, inverse.transform=FALSE)
+```
 
+```{r}
+LuciernagaIntegration(template=Updated[2,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[3,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[4,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[5,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[6,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[7,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[8,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[9,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[10,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+```{r}
+LuciernagaIntegration(template=Updated[11,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+
+```{r}
+LuciernagaIntegration(template=Updated[12,], gs=Unstained_GatingSet, GuessSimilar=FALSE,
+  Unstained=TRUE, inverse.transform=FALSE)
+```
+
+
+```{r}
+print("Goodbye")
 ```
