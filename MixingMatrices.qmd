@@ -805,6 +805,27 @@ dims=list("FSC-A", "SSC-A"), subset="nonRBCs", regate=TRUE) # NDOO6 PMA
 
 ![](images/78_PMADead.png)
 
+And if we now check the created gates
+
+```{r}
+#| eval: FALSE
+plot(Unstained_GatingSet)
+```
+
+![](images/80_FinalUnstainedGates.png)
+
+#### Saving the GatingSet
+
+And now that these final gates are drawn and adjusted, lets go ahead and similarly save this GatingSet out as a new intermediate .gs folder for future use. 
+
+```{r}
+#| eval: FALSE
+CellUnstainedStoredHere <- file.path(OutputLocation, "CellsUnstained_GS_Amplified.gs")
+
+save_gs(Unstained_GatingSet, CellUnstainedStoredHere)
+# Unstained_GatingSet <- load_gs(CellUnstainedStoredHere)
+```
+
 
 #### Extracting Autofluorescence Signature
 
@@ -812,53 +833,172 @@ Now that we have the unstained specimens loaded, and last of the positional gate
 
 ```{r}
 #| eval: FALSE
+PBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+PBMC_Unstained[1,1] <- "PBMC_Unstained"
+```
+
+```{r}
+#| eval: FALSE
+PBMC_Monocyte_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
+ gate="Monocytes", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+PBMC_Monocyte_Unstained[1,1] <- "PBMC_Monocyte_Unstained"
+```
+
+```{r}
+#| eval: FALSE
+PBMC_Activated_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=10,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+PBMC_Activated_Unstained[1,1] <- "PBMC_Activated_Unstained"
+```
+
+```{r}
+#| eval: FALSE
+PBMC_Dead_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=10,
+ gate="PBMCDead", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+
+PBMC_Dead_Unstained[1,1] <- "PBMC_Dead_Unstained"
+```
+
+```{r}
+#| eval: FALSE
+
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="scatter", sample=1, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 CBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=1,
- gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+CBMC_Unstained[1,1] <- "CBMC_Unstained"
 ```
 
 ```{r}
 #| eval: FALSE
+
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="CordDead", sample=1, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 CBMC_Dead_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=1,
- gate="CordDead", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+ gate="CordDead", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
+
+CBMC_Dead_Unstained[1,1] <- "CBMC_Dead_Unstained"
 ```
 
+And lets go ahead and combine these together into a data.frame to simplify the data tidying steps downstream. 
 
 ```{r}
 #| eval: FALSE
-PBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=11,
- gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+UnstainedData <- bind_rows(PBMC_Unstained, PBMC_Monocyte_Unstained, PBMC_Activated_Unstained, 
+  PBMC_Dead_Unstained, CBMC_Unstained, CBMC_Dead_Unstained)
+
+UnstainedData
 ```
 
+![](images/81_Unstaineds.png)
+
+```{r}
+#| include: FALSE
+#| eval: FALSE
+
+UnstainedSignaturesStoredHere <- file.path(OutputLocation, "UnstainedSignatures.csv")
+write.csv(UnstainedData, UnstainedSignaturesStoredHere, row.names=FALSE)
+```
+
+```{r}
+#| include: FALSE
+
+UnstainedSignaturesStoredHere <- file.path(OutputLocation, "UnstainedSignatures.csv")
+UnstainedData <- read.csv(UnstainedSignaturesStoredHere, check.names=FALSE)
+```
+
+#### Visualizing Autofluorescencce signatures
+
+And for curiosity while we are here, lets visualize the signatures, both raw and normalized
+
+```{r}
+Plots <- Luciernaga::VisualizeSignatures(data=UnstainedData, columnname="Fluorophore", Normalize = FALSE)
+plotly::ggplotly(Plots)
+```
+
+```{r}
+Plots <- Luciernaga::VisualizeSignatures(data=UnstainedData, columnname="Fluorophore", Normalize = TRUE)
+plotly::ggplotly(Plots)
+```
+
+So overall, some differences in brightness, but mostly appear to be similar in terms of normalized signature. 
+
+### Data Tidying
+
+Now that we have the signature values for the detector columns and identifying "Fluorophore" name, we need to do some data tidying to fit these values from our unstained controls into the format needed for the Background subtraction template. 
+
+Lets start by slicing the first row from our existing template. 
 ```{r}
 #| eval: FALSE
-PMA_Activated_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=12,
- gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
-```
-
-```{r}
-CellUnstained[1,1] <- "CellUnstained"
-
 CellStandin <- UpdatedTemplate |> slice(1)
-CellStandin[1,1] <- "DTR_2023_ILT_01-ND006_v1-Ctrl_Unstained.1235671.fcs"
-CellStandin[1,2] <- ""
-CellStandin[1,3] <- "CellUnstained"
-CellStandin[1,4] <- "Cells"
-CellStandin[1,5] <- ""
-CellStandin[1,7:ncol(CellStandin)] <- CellUnstained[2:ncol(CellUnstained)]
-UpdatedTemplate <- rbind(CellStandin, UpdatedTemplate)
-
-head(UpdatedTemplate, 3) # CellUnstained Row Added
 ```
+
+![](images/82_SliceOne.png)
+
+Lets then duplicate the rows to match the number of rows in UnstainedData
+
+```{r}
+#| eval: FALSE
+CellStandin <- CellStandin[rep(1, nrow(UnstainedData)), ]
+rownames(CellStandin) <- NULL
+```
+
+Lets now follow up by blanking some of the metadata columns
+
+```{r}
+#| eval: FALSE
+CellStandin[,1] <- "" # name
+CellStandin[,2] <- "" # Antigen
+CellStandin[,3] <- "" # Fluorophore
+CellStandin[,4] <- "Cells" # Type
+CellStandin[,5] <- "" # Detector
+CellStandin[,6] <- "" # Negative
+
+CellStandin
+```
+
+![](images/83_Blanked.png)
+
+Lets cut and paste in the detector values over from UnstainedData into CellStandin, and then place the names into a few of the metadata column locations. 
+
+```{r}
+#| eval: FALSE
+CellStandin[,7:ncol(CellStandin)] <- UnstainedData[2:ncol(UnstainedData)]
+CellStandin[,c(1,3,6)] <- UnstainedData[1]
+CellStandin[,7:ncol(CellStandin)] <- UnstainedData[1]
+CellStandin
+```
+
+![](images/84_EditedIn.png)
+
+At this point, we can combine in with the UpdatedTemplate to form the completed template we need for background subtraction. 
+
+```{r}
+#| eval: FALSE
+UpdatedTemplate <- bind_rows(CellStandin, UpdatedTemplate)
+UpdatedTemplate
+```
+
+![](images/85_Appended.png)
 
 ### Background Subtraction
 
+With the template now assembled, lets proceed to subtract out the correct background from each of the single-color controls
+
 ```{r}
 #| eval: FALSE
-# UpdatedTemplateBackup <-  UpdatedTemplate
-# UpdatedTemplate <- UpdatedTemplateBackup #[c(1,11),]
-
-CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
+CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=TRUE)
 ```
+
+And lets visualize the outputs
 
 ```{r}
 #| eval: FALSE
