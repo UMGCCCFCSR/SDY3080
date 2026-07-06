@@ -91,14 +91,6 @@ library(stringr)
 library(Luciernaga)
 ```
 
-```{r}
-#| eval: FALSE
-
-# For Testing/Debugging Purposes on David's end
-devtools::document("/home/david/Documents/Luciernaga")
-devtools::load_all("/home/david/Documents/Luciernaga")
-```
-
 With this done, lets re-specify the file paths to our Storage and Output locations. 
 
 ```{r}
@@ -488,10 +480,12 @@ Oh dear! Let's circle back to troubleshooting those negative signatures in a lit
 ## Cell Single-Colors
 
 ```{r}
+#| eval: FALSE
 CellsSC_GatingSet <- load_gs("outputs/CellsSCs_GS.gs")
 ```
 
 ```{r}
+#| eval: FALSE
 pData(CellsSC_GatingSet)
 plot(CellsSC_GatingSet)
 ```
@@ -500,7 +494,7 @@ plot(CellsSC_GatingSet)
 ### Metadata
 
 ```{r}
-#| eval: TRUE
+#| eval: FALSE
 cell_pd <- pData(CellsSC_GatingSet)
 
 Updated_cell_pd <- cell_pd |> mutate(
@@ -530,6 +524,7 @@ pData(CellsSC_GatingSet)
 ```
 
 ```{r}
+#| eval: FALSE
 Template <- pData(CellsSC_GatingSet)
 Template <- Template |> mutate(Detector="", Negative="CellUnstained")
 
@@ -542,11 +537,13 @@ write.csv(Template, StoreHere, row.names=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 StoreHere <- file.path(OutputLocation, "UpdatedCellMatch.csv")
 CellMatchTemplate <- read.csv(StoreHere, check.names=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 CellMatchTemplate |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
      ungroup() |> filter(Count > 1) |> pull(Fluorophore) # Spot duplicated fluorophore references
 
@@ -560,6 +557,7 @@ KeptCells |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
 ```
 
 ```{r}
+#| eval: FALSE
 plot(CellsSC_GatingSet)
 
 devtools::document("/home/david/Documents/Luciernaga")
@@ -571,20 +569,24 @@ InitialUnmixSpanGates(template=KeptCells, gs=CellsSC_GatingSet, subset="scatter"
 ### Checking Spans
 
 ```{r}
+#| eval: FALSE
 CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
 ```
 
 ```{r}
+#| eval: FALSE
 save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS2_Amplified.gs")
 ```
 
 ### Load back in
 
 ```{r}
+#| eval: FALSE
 CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
 ```
 
 ```{r}
+#| eval: FALSE
 #KeptCellsBackup <- KeptCells
 #KeptCells <- KeptCellsBackup[10,]
 
@@ -594,6 +596,7 @@ UpdatedTemplate <- RetrieveAverageSignature(template=KeptCells, gs=CellsSC_Gatin
 ## Unstaineds
 
 ```{r}
+#| eval: FALSE
 Unstained_GatingSet <- load_gs("outputs/CellsUnstained_GS.gs")
 
 plot(Unstained_GatingSet)
@@ -602,6 +605,7 @@ plot(Unstained_GatingSet)
 ```
 
 ```{r}
+#| eval: FALSE
 CellUnstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
  gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
 
@@ -620,6 +624,7 @@ head(UpdatedTemplate, 3) # CellUnstained Row Added
 ```
 
 ```{r}
+#| eval: FALSE
 # UpdatedTemplateBackup <-  UpdatedTemplate
 # UpdatedTemplate <- UpdatedTemplateBackup #[c(1,11),]
 
@@ -627,12 +632,12 @@ CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normali
 ```
 
 ```{r}
+#| eval: FALSE
 Plot <- VisualizeSignatures(columnname="Fluorophore", data=CellFluorophoreSignatures,
  Normalize=FALSE, characterColumns="Fluorophore")
 
 plotly::ggplotly(Plot)
 ```
-
 
 # Take Away
 
