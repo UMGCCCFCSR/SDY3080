@@ -143,7 +143,7 @@ Updated_bead_pd <- bead_pd |> mutate(
     raw = NULL
   )
 
-Updated_bead_pd <- Updated_bead_pd |> relocate(Type, .after="Fluorophore")
+Updated_bead_pd <- Updated_bead_pd |> relocate(Fluorophore, Antigen, Type, .after="name")
 ```
 
 ```{r}
@@ -315,7 +315,7 @@ Since we are working with beads, lets grab that final cleanup gate "singlets". L
 
 ```{r}
 #| eval: FALSE
-InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets", minpercentile=0.75, maxpercentile = 0.80)
+InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets", minpercentile=0.75, maxpercentile = 0.99)
 ```
 
 As the gates get created, the progress bar in turn gets updated
@@ -416,6 +416,9 @@ As we can see, the retrieved signature values for each fluorophore have been app
 #| eval: FALSE
 BeadUnstained <- GateExprsIterated(gs=BeadsSC_GatingSet, sample=1,
  gate="singlets", excludeThese="FSC|SSC|Time|-H")
+
+BeadUnstained[1,1] <- "BeadUnstained"
+
 BeadUnstained
 ```
 
@@ -435,6 +438,8 @@ So, knowing which row and which column, lets paste it back in
 ```{r}
 #| eval: FALSE
 UpdatedTemplate[1,7:ncol(UpdatedTemplate)] <- BeadUnstained[2:ncol(BeadUnstained)]
+
+UpdatedTemplate[1,2] <- "BeadUnstained"
 UpdatedTemplate
 ```
 
@@ -475,7 +480,7 @@ Plot <- VisualizeSignatures(columnname="Fluorophore", data=BeadFluorophoreSignat
 plotly::ggplotly(Plot)
 ```
 
-Oh dear! Let's circle back to troubleshooting those negative signatures in a little bit. 
+And those look relatively reasonable at first glance, lets power on and tackle the cell single-color unmixing controls next. 
 
 ## Cell Single-Colors
 
@@ -517,7 +522,7 @@ Updated_cell_pd <- cell_pd |> mutate(
     raw = NULL
   )
 
-Updated_cell_pd <- Updated_cell_pd |> relocate(Type, .after="Fluorophore")
+Updated_cell_pd <- Updated_cell_pd |> relocate(Fluorophore, Antigen, Type, .after="name")
 
 Updated_cell_pd
 ```
@@ -594,7 +599,7 @@ Updated_cell_pd <- Template |>
     TRUE ~ "PBMC_Unstained"
   ))
 
-Updated_cell_pd
+Updated_cell_pd <- Updated_cell_pd |> relocate(Fluorophore, Antigen, Type, Detector, Negative, .after="name")
 ```
 
 ![](images/69_UpdatedNegatives.png)
@@ -670,6 +675,35 @@ plot(CellsSC_GatingSet)
 ```
 
 ![](images/71_CellGates.png)
+
+### Remaining Gate Adjustment
+
+At the moment, all the initial peak detector gates have been created based of the parent "scatter" gate. However, for Zombie NIR Viability we are set to use a CBMC dead gate, and for Pacific Blue CD14 we will be using the monocytes gate. Before proceeding, we should double check that the previous gate shifts implemented are still in place.
+
+```{r}
+#| eval: FALSE
+pData(CellsSC_GatingSet) |> mutate(WhereAt = dplyr::row_number())
+```
+
+![](images/86_SCAdjustments.png)
+
+```{r}
+#| eval: FALSE
+
+# PacificBlue Dump_CD14 is #24 based off above pData
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="scatter", sample=24, AdjustAll=FALSE)
+```
+
+![](images/87_CD14check.png)
+
+```{r}
+#| eval: FALSE
+
+# Zombie NIR CBMC is #31 based off above pData
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="scatter", sample=31, AdjustAll=FALSE)
+```
+
+![](images/88_ZombieCheck.png)
 
 
 ### Checking UnmixingSpanGates
@@ -847,7 +881,7 @@ PBMC_Unstained[1,1] <- "PBMC_Unstained"
 #| eval: FALSE
 
 # pData(CellsSC_GatingSet) |> mutate(WhichRow=row_number())
-gs_apply_gate_check(gs=CellsSC_GatingSet, gate="Pacific Blue", sample=24, AdjustAll=FALSE)
+# gs_apply_gate_check(gs=CellsSC_GatingSet, gate="Pacific Blue", sample=24, AdjustAll=FALSE)
 # gs_apply_gate_check(gs=Unstained_GatingSet, gate="Monocytes", sample=9, AdjustAll=FALSE)
 # plot(Unstained_GatingSet)
 
@@ -973,9 +1007,13 @@ Lets now follow up by blanking some of the metadata columns
 
 ```{r}
 #| eval: FALSE
+
+# Note: PLEASE VERIFY CORRECT COLUMNS WHEN HARD-CODING LIKE THIS
+# colnames(CellStandin)
+
 CellStandin[,1] <- "" # name
-CellStandin[,2] <- "" # Antigen
-CellStandin[,3] <- "" # Fluorophore
+CellStandin[,2] <- "" # Fluorophore
+CellStandin[,3] <- "" # Antigen
 CellStandin[,4] <- "Cells" # Type
 CellStandin[,5] <- "" # Detector
 CellStandin[,6] <- "" # Negative
@@ -990,8 +1028,7 @@ Lets cut and paste in the detector values over from UnstainedData into CellStand
 ```{r}
 #| eval: FALSE
 CellStandin[,7:ncol(CellStandin)] <- UnstainedData[2:ncol(UnstainedData)]
-CellStandin[,c(1,3,6)] <- UnstainedData[1]
-CellStandin[,7:ncol(CellStandin)] <- UnstainedData[1]
+CellStandin[,c(1,2,6)] <- UnstainedData[1]
 CellStandin
 ```
 
@@ -1007,10 +1044,6 @@ UpdatedTemplate
 
 ![](images/85_Appended.png)
 
-```{r}
-# UpdatedTemplate |> mutate(WhichRow = dplyr::row_number()) |> View()
-```
-
 ### Background Subtraction
 
 With the template now assembled, lets proceed to subtract out the correct background from each of the single-color controls
@@ -1020,18 +1053,26 @@ With the template now assembled, lets proceed to subtract out the correct backgr
 CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=TRUE)
 ```
 
+![](images/89_CellSignatures.png)
+
+And once again, before we loose our hard work, lets go ahead and save these initial signatures to a .csv file. 
+
 ```{r}
 #| eval: FALSE
-devtools::document("/home/david/Documents/Luciernaga")
-devtools::load_all("/home/david/Documents/Luciernaga")
+StoreHere <- file.path(OutputLocation, "CellInitialSignatureMatrix.csv")
+write.csv(CellFluorophoreSignatures, StoreHere, row.names=FALSE)
+```
 
-CellFluorophoreSignatures
+Which can then subsequently be read back in
+
+```{r}
+StoreHere <- file.path(OutputLocation, "CellInitialSignatureMatrix.csv")
+CellFluorophoreSignatures <- read.csv(StoreHere, check.names=FALSE)
 ```
 
 And lets visualize the outputs
 
 ```{r}
-#| eval: FALSE
 Plot <- VisualizeSignatures(columnname="Fluorophore", data=CellFluorophoreSignatures,
  Normalize=FALSE, characterColumns="Fluorophore")
 
@@ -1040,7 +1081,7 @@ plotly::ggplotly(Plot)
 
 # Take Away
 
-In this walk-through, we explored how to orchestrate the creation and adjustment of peak detector gates for our single-color controls. We saw examples for both cells and beads. We still left open the need to verify whether the extracted fluorescent signatures was indeed correct, or whether gates needed to be redrawn. 
+In this walk-through, we explored how to orchestrate the creation and adjustment of peak detector gates for our single-color controls. Once these gates were setup, for every fluorophore in our panel, we extracted the median values for the cells contained within those gates, subtracted the background and then normalized the values. These signature matrices where then stored as .csv files so that we can compare and contrast the signatures during another walkthrough. Whether the extracted averaged fluorescent signatures are indeed correct and will function properly in unmixing (or if we need to go back and redraw our spanGates), is something we will explore again in the next walk-through.
 
 # Additional Resources
 
