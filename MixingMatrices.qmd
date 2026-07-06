@@ -479,19 +479,26 @@ Oh dear! Let's circle back to troubleshooting those negative signatures in a lit
 
 ## Cell Single-Colors
 
+Having made our way through the bead single color unmixing controls, lets repeat the process with the cell single colors. To do this, let load them in from their intermediate .gs
+
 ```{r}
 #| eval: FALSE
-CellsSC_GatingSet <- load_gs("outputs/CellsSCs_GS.gs")
+CellSCsStoredHere <- file.path(OutputLocation, "CellsSCs_GS.gs")
+CellsSC_GatingSet <- load_gs(CellSCsStoredHere )
 ```
+
+### Updating Metadata
+
+Lets quickly check the existing metadata, and see if the names have changed compared to the bead unmixing controls
 
 ```{r}
 #| eval: FALSE
 pData(CellsSC_GatingSet)
-plot(CellsSC_GatingSet)
 ```
 
+![](images/65_CellpData.png)
 
-### Metadata
+Overall, the name syntax for these files is similar to what we saw for the bead single-color unmixing controls. We will likely be able to use the same extraction code we used for the beads, with only a few modifications needed. 
 
 ```{r}
 #| eval: FALSE
@@ -512,6 +519,15 @@ Updated_cell_pd <- cell_pd |> mutate(
 
 Updated_cell_pd <- Updated_cell_pd |> relocate(Type, .after="Fluorophore")
 
+Updated_cell_pd
+```
+
+![](images/66_InitialRetrievedMetadata.png)
+
+Since no unstained samples are present in this GatingSet, the only adjustment we need to carry out is changing PE-Vio770 and PE-Dazzle594 to include the space in the name to allow the `DetectorGuess()` function to correctly assign the peak detector later on. 
+
+```{r}
+#| eval: FALSE
 Updated_cell_pd <- Updated_cell_pd |> 
   mutate(Fluorophore = case_when(
     Fluorophore == "PE-Vio770" ~ "PE-Vio 770",
@@ -523,6 +539,12 @@ pData(CellsSC_GatingSet) <- Updated_cell_pd
 pData(CellsSC_GatingSet)
 ```
 
+![](images/66_ModifiedMetadata.png)
+
+### Template Set Up
+
+At this point, we can proceed to generate the template that we will need for gating. In this case, lets start off by specifying everything as using a "CellUnstained" negative, and then iterate through the Fluorophore column with `DetectorGuess()` to retrieve the peak detectors. 
+
 ```{r}
 #| eval: FALSE
 Template <- pData(CellsSC_GatingSet)
@@ -532,58 +554,160 @@ Template <- Template |> mutate(
     Detector = map_chr(Fluorophore, \(f) DetectorGuess(x = f, NumberDetectors = 64))
   )
 
+Template
+```
+
+![](images/67_TemplateInitial.png)
+
+In this case, however, we have a bit more variety in terms of the negative background being used. Squinting at the [lab notebook](https://github.com/DavidRach/LabNotebook/blob/main/2023/2023-05-12.pdf) scan
+
+![](images/68_LabNotebook.png)
+
+Looks like the CD8 (BUV496), CD45RA (BV510), CD56 (BV605), PD1 (PE-Vio 770), CD16 (APC), CD38 (APC-Fire 810), and 1 of the Viability (Zombie NIR) were prepared using extra cord blood mononuclear cells. Similarly, the CD69 (BUV563), TNFa (PE-Dazzle 594), IFNg (BV750), CD107a (APC-R700), CD25 (PE-Cy5) and the other Viability (Zombie NIR) were prepared using PMA-ionomycin stimulated PBMC. All other controls would have been unstimulated PBMC. 
+
+And as was previously mentioned, we will need to match the cell gating background for the Pacific Blue CD14 (Monocyte gated) and both Zombie NIR controls (dead cell gated) when the time comes. 
+
+To cut down on the modifications needed in the future, lets modify the template to account for these different negative backgrounds using the `dplyr` packages `case_when()` and `mutate()` functions. 
+
+```{r}
+#| eval: FALSE
+Updated_cell_pd <- Template |> 
+  mutate(Negative = case_when(
+    # Different Gate Placements
+    Antigen == "Dump_CD14" ~ "PBMC_Monocyte_Unstained",
+    Antigen == "Viability" ~ "CBMC_Dead_Unstained",
+    Antigen == "Viability_PMA" ~ "PBMC_Dead_Unstained", 
+    # CBMC 
+    Antigen == "CD8" ~ "CBMC_Unstained",
+    Antigen == "CD45RA" ~ "CBMC_Unstained",
+    Antigen == "CD56" ~ "CBMC_Unstained", 
+    Antigen == "PD1" ~ "CBMC_Unstained",
+    Antigen == "CD16" ~ "CBMC_Unstained",
+    Antigen == "CD38" ~ "CBMC_Unstained", 
+    # PMA-stimulated PBMC
+    Antigen == "CD69" ~ "PBMC_Activated_Unstained",
+    Antigen == "TNFa" ~ "PBMC_Activated_Unstained",
+    Antigen == "IFNg" ~ "PBMC_Activated_Unstained", 
+    Antigen == "CD107a" ~ "PBMC_Activated_Unstained",
+    Antigen == "CD25" ~ "PBMC_Activated_Unstained", 
+    # All Others
+    TRUE ~ "PBMC_Unstained"
+  ))
+
+Updated_cell_pd
+```
+
+![](images/69_UpdatedNegatives.png)
+
+With these adjustments made, we can then proceed to incorporate it back into the GatingSet metadata via the assignment arrow and `pData()` function
+
+```{r}
+#| eval: FALSE
+pData(CellsSC_GatingSet) <- Updated_cell_pd
+```
+
+And for insurance purposes, lets go ahead and store it as a .csv file as well. 
+
+```{r}
+#| eval: FALSE
+Template <- pData(CellsSC_GatingSet)
 StoreHere <- file.path(OutputLocation, "CellMatch.csv")
 write.csv(Template, StoreHere, row.names=FALSE)
 ```
 
 ```{r}
-#| eval: FALSE
 StoreHere <- file.path(OutputLocation, "UpdatedCellMatch.csv")
 CellMatchTemplate <- read.csv(StoreHere, check.names=FALSE)
 ```
 
+### Removing Duplicates
+
+Once again, lets check for duplicates
+
 ```{r}
-#| eval: FALSE
 CellMatchTemplate |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
      ungroup() |> filter(Count > 1) |> pull(Fluorophore) # Spot duplicated fluorophore references
+```
 
+Both Pacific Blue and Zombie NIR come up as we had encountered with the beads. Checking the files, we opt to keep the duplicate that contains the brighter staining events. This results in keeeping Pacific Blue Dump_CD14 which is considerably brighter compared to the CD19, and the CBMC based Zombie NIR viability control (which is brighter than the PMA-ionomycin stimulated PBMC sample). We can also also exclude the redundant Alexa Fluor 488 control. 
+
+```{r}
 KeptCells <- CellMatchTemplate |>
      filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Dump_CD19 Pacific Blue (Cells).1235702.fcs") |>
      filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_Viability_PMA Zombie NIR (Cells).1235709.fcs") |>
      filter(!name %in% "DTR_2023_ILT_01-Reference Group-DR_CD3 Alexa Fluor 488 (Cells).1235688.fcs") 
-
-KeptCells |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
-     ungroup() |> filter(Count > 1) |> pull(Fluorophore) # No duplicates
+KeptCells
 ```
+
+Considering this panel has 29-fluorophores, and we have 29-rows, looks like we are good. We will need to add in the unstaineds separately later on. 
+
+
+### Initial UnmixSpanGates
+
+Before creating the peak detector gates, lets double check the existing gates for the CellsSC_GatingSet
 
 ```{r}
 #| eval: FALSE
 plot(CellsSC_GatingSet)
+```
 
-devtools::document("/home/david/Documents/Luciernaga")
-devtools::load_all("/home/david/Documents/Luciernaga")
+![](images/65_Plots.png)
 
+At this point, we can proceed to create the initial peak detector gates via `InitialUnmixSpanGagtes()`, placing them under the existing "scatter" cleanup gate, monitoring the progress bar as we wait. 
+
+```{r}
+#| eval: FALSE
 InitialUnmixSpanGates(template=KeptCells, gs=CellsSC_GatingSet, subset="scatter", minpercentile=0.75, maxpercentile = 0.99)
 ```
 
-### Checking Spans
+![](images/70_Processing.png)
+
+We can then quickly verify that the initial peak detector gates have been created. 
+
+```{r}
+#| eval: FALSE
+plot(CellsSC_GatingSet)
+```
+
+![](images/71_CellGates.png)
+
+
+### Checking UnmixingSpanGates
+
+With the peak detector gates now created, we can run `CheckUnmixingSpanGates()` to iterate through them and allow us to adjust any of the spans that are off via the `flowGate` ShinyApp. 
 
 ```{r}
 #| eval: FALSE
 CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
 ```
 
+If the gate is good as is, just click done to move to the next specimen
+
+![](images/72_APCR700.png)
+
+Alternatively, draw a span, and then select done
+
+![](images/72_BV786.png)
+
+And repeat for the rest of the single-colors, attempting as much as possible to stick to the best practices for unmixing controls. 
+
+![](images/72_BUV615.png)
+
+### Saving the GatingSet
+
+Having created the peak detector gates, and ensured they are not horridly off for their respective single-color control specimens, go ahead and save this state as its own intermediate .gs object to allow for quick reloading for any subsequent steps. 
+
 ```{r}
 #| eval: FALSE
-save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS2_Amplified.gs")
+SaveUpdatedCellSCHere <- file.path(OutputLocation, "CellsSC_GS_Amplified.gs")
+
+save_gs(CellsSC_GatingSet, SaveUpdatedCellSCHere)
+# CellsSC_GatingSet <- load_gs(SaveUpdatedCellSCHere)
 ```
 
-### Load back in
+### Retrieving Average Signature
 
-```{r}
-#| eval: FALSE
-CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
-```
+With our span gates checked, we can proceed to expand the template, iterating through each row and retrieving the median signature for each detector using the `RetrieveAverageSignature()` wrapper function. 
 
 ```{r}
 #| eval: FALSE
@@ -593,22 +717,125 @@ CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
 UpdatedTemplate <- RetrieveAverageSignature(template=KeptCells, gs=CellsSC_GatingSet, inverse.transform = TRUE)
 ```
 
-## Unstaineds
+![](images/73_UpdatedTemplate.png)
+
+
+### Assembling Negative Backgrounds
+
+Unlike the Bead GatingSet that contained its own unstained, we will need to select several unstained samples to use as background subtraction for our single-colors. 
+
+```{r}
+KeptCells |> pull(Negative) |> unique()
+```
+
+#### UnstainedGS
+
+Lets retrieve the CellUnstained_GS from where we stored it as a .gs folder in the last walkthrough. 
 
 ```{r}
 #| eval: FALSE
-Unstained_GatingSet <- load_gs("outputs/CellsUnstained_GS.gs")
-
-plot(Unstained_GatingSet)
-# pData(Unstained_GatingSet[9]) # Ctrl - ND006
-# pData(Unstained_GatingSet[10]) # PMA - ND006
+UnstainedIntermediateStoredHere <- file.path(OutputLocation, "CellsUnstained_GS.gs")
+Unstained_GatingSet <- load_gs(UnstainedIntermediateStoredHere)
 ```
 
 ```{r}
 #| eval: FALSE
-CellUnstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
- gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+pData(Unstained_GatingSet)
+```
 
+![](images/74_UnstainedMetadata.png)
+
+#### Drawing Final Gates
+
+After squinting away through our [lab notebook](https://github.com/DavidRach/LabNotebook/blob/main/2023/2023-05-12.pdf) scan, it looks like the PBMC controls were sourced from the ND006 specimens. CBMC originated from INF052 specimen.  We still need to draw a monocyte and dead cell gates, since the current gating scheme appears as follows
+
+```{r}
+#| eval: FALSE
+plot(Unstained_GatingSet)
+```
+
+![](images/65_Plots.png)
+
+Lets tackle the addition of those new gates first, basing them off the parent gate (nonRBCs)
+
+```{r}
+pd <- pData(Unstained_GatingSet)
+pd |> mutate(WhichRow = dplyr::row_number())
+```
+
+![](images/75_WhichRow.png)
+
+First lets create a Monocyte gate based off the CBMC specimen. 
+
+```{r}
+#| eval: FALSE
+
+flowGate::gs_gate_interactive(gs=Unstained_GatingSet, filterId="Monocytes", sample=1,
+dims=list("FSC-A", "SSC-A"), subset="nonRBCs") # INF052 Control
+```
+
+![](images/76_CordMonocytes.png)
+
+And lets check it for the adult PBMC specimen without stimulation. 
+
+```{r}
+#| eval: FALSE
+gs_apply_gate_check(gs=Unstained_GatingSet, gate="Monocytes", sample=9, AdjustAll=FALSE)
+```
+
+![](images/79_MonocytePBMCAdjust.png)
+
+We can then draw gates for dead/dying CBMC
+
+```{r}
+#| eval: FALSE
+flowGate::gs_gate_interactive(gs=Unstained_GatingSet, filterId="CordDead", sample=1,
+dims=list("FSC-A", "SSC-A"), subset="nonRBCs") # INF052 Control
+```
+
+![](images/77_CordDead.png)
+
+As well as dead/dying PBMC following PMA-ionomycin activation
+
+```{r}
+#| eval: FALSE
+flowGate::gs_gate_interactive(gs=Unstained_GatingSet, filterId="PBMCDead", sample=10,
+dims=list("FSC-A", "SSC-A"), subset="nonRBCs", regate=TRUE) # NDOO6 PMA
+```
+
+![](images/78_PMADead.png)
+
+
+#### Extracting Autofluorescence Signature
+
+Now that we have the unstained specimens loaded, and last of the positional gates created, we are ready to extract out the signatures from each, and tidy the data to match the template format being used by our single colors. Lets start by first extracting the median fluorescent signature values for each. 
+
+```{r}
+#| eval: FALSE
+CBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=1,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+```
+
+```{r}
+#| eval: FALSE
+CBMC_Dead_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=1,
+ gate="CordDead", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+```
+
+
+```{r}
+#| eval: FALSE
+PBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=11,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+```
+
+```{r}
+#| eval: FALSE
+PMA_Activated_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=12,
+ gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=FALSE)
+```
+
+```{r}
 CellUnstained[1,1] <- "CellUnstained"
 
 CellStandin <- UpdatedTemplate |> slice(1)
@@ -622,6 +849,8 @@ UpdatedTemplate <- rbind(CellStandin, UpdatedTemplate)
 
 head(UpdatedTemplate, 3) # CellUnstained Row Added
 ```
+
+### Background Subtraction
 
 ```{r}
 #| eval: FALSE
