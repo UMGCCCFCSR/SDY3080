@@ -833,6 +833,10 @@ Now that we have the unstained specimens loaded, and last of the positional gate
 
 ```{r}
 #| eval: FALSE
+
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="scatter", sample=9, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 PBMC_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
  gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
 
@@ -841,6 +845,12 @@ PBMC_Unstained[1,1] <- "PBMC_Unstained"
 
 ```{r}
 #| eval: FALSE
+
+# pData(CellsSC_GatingSet) |> mutate(WhichRow=row_number())
+gs_apply_gate_check(gs=CellsSC_GatingSet, gate="Pacific Blue", sample=24, AdjustAll=FALSE)
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="Monocytes", sample=9, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 PBMC_Monocyte_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=9,
  gate="Monocytes", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
 
@@ -849,6 +859,10 @@ PBMC_Monocyte_Unstained[1,1] <- "PBMC_Monocyte_Unstained"
 
 ```{r}
 #| eval: FALSE
+
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="scatter", sample=10, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 PBMC_Activated_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=10,
  gate="scatter", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
 
@@ -857,6 +871,10 @@ PBMC_Activated_Unstained[1,1] <- "PBMC_Activated_Unstained"
 
 ```{r}
 #| eval: FALSE
+
+# gs_apply_gate_check(gs=Unstained_GatingSet, gate="PBMCDead", sample=10, AdjustAll=FALSE)
+# plot(Unstained_GatingSet)
+
 PBMC_Dead_Unstained <- GateExprsIterated(gs=Unstained_GatingSet, sample=10,
  gate="PBMCDead", excludeThese="FSC|SSC|Time|-H", inverse.transform=TRUE)
 
@@ -989,6 +1007,10 @@ UpdatedTemplate
 
 ![](images/85_Appended.png)
 
+```{r}
+# UpdatedTemplate |> mutate(WhichRow = dplyr::row_number()) |> View()
+```
+
 ### Background Subtraction
 
 With the template now assembled, lets proceed to subtract out the correct background from each of the single-color controls
@@ -996,6 +1018,14 @@ With the template now assembled, lets proceed to subtract out the correct backgr
 ```{r}
 #| eval: FALSE
 CellFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=TRUE)
+```
+
+```{r}
+#| eval: FALSE
+devtools::document("/home/david/Documents/Luciernaga")
+devtools::load_all("/home/david/Documents/Luciernaga")
+
+CellFluorophoreSignatures
 ```
 
 And lets visualize the outputs
