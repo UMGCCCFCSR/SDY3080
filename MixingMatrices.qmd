@@ -1,7 +1,7 @@
 ---
-title: "Unmixing"
+title: "Retrieving Signature Matrices"
 author: "David Rach"
-date: 06-19-2026
+date: 07-05-2026
 format:
   html:
     toc: true
@@ -10,41 +10,129 @@ execute:
   echo: true
 ---
 
+![](/images/WebsiteBanner.png)
+
+::: {style="text-align: right;"}
+[![AGPL-3.0](https://img.shields.io/badge/license-AGPLv3-blue)](https://www.gnu.org/licenses/agpl-3.0.en.html) [![CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-sa/4.0/)
+:::
+
+For the YouTube livestream schedule, see [here](https://www.youtube.com/@cytometryinr)
+
+For screen-shot slides, click [here](/course/03_InsideFCSFile/slides.qmd)
+
+<br>
+
+---
+
+# Background
+
+During weeks twelve through fourteen of the [Cytometry in R course](https://umgcccfcsr.github.io/CytometryInR/), we primarily focus on how to work with raw Spectral Flow Cytometry (SFC) .fcs files. During Week 12, we learn how to extract out and characterize fluorescent signatures that are present in our unmixing controls (both single-color and unstained). This is followed up on Week 13 by learning how to compare these signatures with each other, allowing us to predict how they will interact in context of a full SFC panel. Finally, in Week 14, we take the fluorescent signatures we have derived from our unmixing controls and use them to unmix full-stained samples. 
+
+Due to the Cytometry in R's course use of GitHub, we are not able to include the full-sized .fcs files due to individual file size sharing constraints. The datasets used during Week's 12 through 14 were consequently downsampled to get around this issue. However, working with the complete datasets can provide additional insight (as well as more closely replicate the experience of working with your own datasets).  This walk-through therefore contains the steps needed to both retrieve and process the original .fcs files that were used from the [ImmPort](https://www.immport.org/) repository. 
+
+In the [Set Up for Signature Retrieval]() walk-through, we transformed, gated and verified the gate placement for each of our unmixing control GatingSet objects (Bead Single Colors, Cell Single Colors, Cell Unstained), before saving each as an intermediate .gs objects we could work with more readily in the future without needing to re-draw and re-adjust these gates. We will pick back up with these intermediates, and work towards retrieving the fluorescent signatures from each of the single-colors to incorporate into a signature matrix. This will be used not only for comparisons during Week 13, but also for use in unmixing the full-stained samples during Week 14. 
+
+This walk-through will share a lot of the content that is being covered in [Week 12](). However, Week 12 walk-through is more granularly focused on explaining the individual signature extraction to break open what for many in the community is a black-box. This walk-through is more focused on providing a faster method by which we can do this at scale for our experiments, in a manner closer to what we would experience using commercial software, while providing launching points for delving further into the aggregated single-cell normalized signatures that will be the focus of the next walk-through. 
+
+# Walk-through
+
+## Checking package versions
+
+As was mentioned in the last walk-through, we are using the developmental version of the `flowGate` package that contains the new functions needed to adjust individual gates for individual specimens. Due to the twice yearly release cycle of Bioconductor packages, the easiest way to  take advantage of these new functions is to install this version of `flowGate` via GitHub. 
+
+If you have already done this in the last walk-through, you are all set. Otherwise, as always, it is easier if you first remove the R package, close and reopen Positron, then install the new version. 
+
+```{r}
+#| eval: FALSE
+
+# Remove existing installation
+remove.packages("flowGate")
+
+# Install the new version
+remotes::install_github("NKInstinct/flowGate") # If non-functional, try the class fork at "DavidRach/flowGate"
+```
+
+Once this is done, check what version is installed using the `packageVersion()` function. The version containing both the ggplot2/ggcyto bug fixes as well as the new gating functions should be any version starting at/after 1.31.1
+
+```{r}
+packageVersion("flowGate")
+```
+
+Additionally, we will be using the most recent version of the Luciernaga package, which has new orchestration functions intended to make setting up fluorophore-specific gates for the correct single-color easier than it would be to specify each of these gates individually. 
+
+If you run `packageVersion()`, you should have version 0.99.10 or greater installed to take advantage of the orchestration functions that are needed for this walk-through. 
+
+```{r}
+packageVersion("Luciernaga")
+```
+
+If you ned to install the newest version, proceed and repeat the uninstall/reinstall steps below. 
+
+```{r}
+#| eval: FALSE
+
+# Remove existing installation
+remove.packages("Luciernaga")
+
+# Install the new version
+remotes::install_github("DavidRach/Luciernaga")
+```
+
+## Initial Set Up
+
+Having verified we have the correct package versions installed, we can proceed to attach the packages needed to our local environment via the `library()` call. 
+
 ```{r}
 library(flowWorkspace)
-#library(flowGate)
+library(flowGate)
 library(dplyr)
 library(purrr)
 library(stringr)
+library(Luciernaga)
 ```
 
 ```{r}
-devtools::document("/home/david/Documents/flowGate")
-devtools::load_all("/home/david/Documents/flowGate")
+#| eval: FALSE
+
+# For Testing/Debugging Purposes on David's end
 devtools::document("/home/david/Documents/Luciernaga")
 devtools::load_all("/home/david/Documents/Luciernaga")
 ```
 
+With this done, lets re-specify the file paths to our Storage and Output locations. 
+
 ```{r}
-#StorageLocation <- file.path("course", "community", "TRU-OLS", "data")
+#StorageLocation <- file.path("course", "SDY3080", "data", "SDY3080")
 StorageLocation <- file.path("data", "SDY3080")
 
-#OutputLocation <- file.path("course", "community", "TRU-OLS", "outputs")
+#OutputLocation <- file.path("course", "SDY3080", "outputs")
 OutputLocation <- file.path("outputs")
 ```
 
-# Beads Single-Colors
+Next up, given that not everyones workstations will be set up in the same way, I recommend working through each GatingSet separately. This in turn should reduce the total amount of RAM being taken up at any one point of time. 
+
+## Beads Single-Colors
+
+Let's start with our Bead Single Color Unmixing controls, which theoretically should be the easier examples to work with.  To get started, letss reload the GatingSet from where we stored the intermediate .gs file. For easier handling, we will save under the same name as we had been using in the previous walkthrough. 
 
 ```{r}
-BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS2.gs")
+#| eval: FALSE
+BeadsStoredHere <- file.path(OutputLocation, "BeadsSCs_GS.gs")
+BeadsSC_GatingSet <- load_gs(BeadsStoredHere)
 ```
 
 ```{r}
+#| eval: FALSE
 pData(BeadsSC_GatingSet)
 ```
 
+![](images/47_BeadGatingSet.png)
 
-## Metadata
+### Updating Metadata
+
+From the metadata, we can see that all the bead single-color controls appear to have been acquired as part of the ILT_00 experiment. If we checked the methods/metadata for the [SDY3080]() study (or alternatively, the internal keywords for the individual .fcs files), we would find that these files were acquired on a Cytek Aurora 5-laser instrument.  
+
+Currently, within the file name, we have several bits of information that would be useful to extract out and place in their column (either in `pData()` or left as a stand-alone data.frame/tibble). This includes Fluorophore, Antigen, and control type ("Beads"). Seeing as we currently have just a name column, we can repeat the appending metadata steps that we have encountered previously, only needing to modify the RegEx syntax needed for the `stringr` package to retrieve the bits of information. 
 
 ```{r}
 #| eval: TRUE
@@ -64,7 +152,20 @@ Updated_bead_pd <- bead_pd |> mutate(
   )
 
 Updated_bead_pd <- Updated_bead_pd |> relocate(Type, .after="Fluorophore")
+```
 
+```{r}
+#| eval: FALSE
+Updated_bead_pd
+```
+
+![](images/48_BeadMetadata.png)
+
+While skimming this updated output, we can notice that both Fluorophore and Antigen ended up as '< NA >'' for the 4BeadsUnstained sample (which didn't conform to the same RegEx pattern seen by the other unmixing controls). Additionally, for this particular Cytek Aurora, the naming convention that was inputted for PE-Vio 770 and PE-Dazzle 594 differs, with no space occuring between Vio770 and Dazzle594. We can correct these small issues through use of the `dplyr` packages `case_when()` function in conjunction with the `mutate()` function. 
+
+
+```{r}
+#| eval: FALSE
 Updated_bead_pd <- Updated_bead_pd |> mutate(
     Antigen = case_when(
       str_detect(name, "BeadsUnstained") ~ NA_character_,
@@ -83,106 +184,297 @@ Updated_bead_pd <- Updated_bead_pd |>
     Fluorophore == "PE-Dazzle594" ~ "PE-Dazzle 594",
     TRUE ~ Fluorophore
   ))
+```
 
+```{r}
+#| eval: FALSE
+Updated_bead_pd
+```
+
+![](images/49_UpdatedBeadMetadata.png)
+
+With these adjustments now made, we can overwrite the existing metadata, replacing with our variant.
+
+```{r}
+#| eval: FALSE
 pData(BeadsSC_GatingSet) <- Updated_bead_pd
 pData(BeadsSC_GatingSet)
 ```
 
-```{r}
-Template <- pData(BeadsSC_GatingSet)
-Template <- Template |> mutate(Detector="", Negative="BeadUnstained")
+### Template Set Up
 
+With the metadata now updated, let's step back and consider some important elements that are missing. Currently, our single-color unmixing controls are present in a relatively generic GatingSet (last common gate being "scatter"). From here, based on the individual single-color control, we will want to create an individual gate for what should be the peak detector for the given fluorophore. We will then want to be able to adjust this individual gate (to accord with best practices), at which point we can extract out the average fluorescent signature for the beads within that gate. However, since these are single-color controls, we will also need to subtract out a background signal for beads, so we will need to provide a designated Negative specimen for this step. 
+
+Lets start off by first retrieving back out our metadata, saving it as a new object Template. 
+
+```{r}
+#| eval: FALSE
+Template <- pData(BeadsSC_GatingSet)
+```
+
+Using `mutate()`, lets go ahead and create two new columns, one for Detector (left empty as denoted by ""), and Negative (providing value "BeadsUnstained" to all since there is only one unstained sample in this GatingSet)
+
+```{r}
+#| eval: FALSE
+Template <- Template |> mutate(Detector="", Negative="BeadUnstained")
+```
+
+![](images/50_BeadsTemplate.png)
+
+Since this data originates from a 5-laser Cytek Aurora with 64, `Luciernaga` has fairly good coverage of the fluorophore signatures. We can iterate in the individual values found in the "Florophore" column, and retrieve the corresponding peak detector. 
+
+```{r}
+#| eval: FALSE
 Template <- Template |> mutate(
     Detector = map_chr(Fluorophore, \(f) DetectorGuess(x = f, NumberDetectors = 64))
   )
+```
 
+![](images/51_GuessedDetectors.png)
+
+Alternatively, if you are working with data from a different spectral flow cytometer manufacturer, you can always specify the correct detectors for the given fluorophore manually (making sure to provide matching syntax to what you would see in the `colnames()`)
+
+```{r}
+#| eval: FALSE
+colnames(BeadsSC_GatingSet)
+```
+
+![](images/52_Colnames.png)
+
+While you could use `mutate()` and `case_when()` to do this entirely programmatically, you can also use `write.csv()` to save out as a .csv file (and also to provide an intermediate point to fall back on). 
+
+```{r}
+#| eval: FALSE
 StoreHere <- file.path(OutputLocation, "BeadMatch.csv")
 write.csv(Template, StoreHere, row.names=FALSE)
 ```
 
+It is also a good idea to duplicate the file and rename it (in this case I called it "UpdatedBeadMatch"). This ensures that should your R script get run after you incorporated in edits by hand, these are not lost.
+
 ```{r}
-StoreHere <- file.path(OutputLocation, "BeadMatch.csv")
+StoreHere <- file.path(OutputLocation, "UpdatedBeadMatch.csv")
 BeadMatchTemplate <- read.csv(StoreHere, check.names=FALSE)
 ```
+
+![](images/51_GuessedDetectors.png)
+
+At this point, we have an assembled template, containing most of the needed information we will need to first create the correct peak detector gates for each single-color, and subsequently match to the sample (BeadsUnstained) from which the background for subtraction is set to be extracted. 
+
+### Removing Duplicates
+
+Before proceeding, lets double check that there are no single-color controls that are present twice in the GatingSet. 
 
 ```{r}
 BeadMatchTemplate |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
      ungroup() |> filter(Count > 1) |> pull(Fluorophore) # Spot duplicated fluorophore references
+```
 
+In this case, we have a few. Lets isolate them for for now and see whats up. 
+
+```{r}
+BeadMatchTemplate |> filter(Fluorophore %in% c("Pacific Blue", "FITC", "Alexa Fluor 647"))
+```
+
+In this particular case, one Fluorophore (Pacific Blue) is the Dump (Lineage -) fluorophore meant to exclude both B cells (CD19) and Monocytes/Myeloid (CD14) cells. If we check the individual .fcs files, the CD14 staining is the brightest in terms of MFI, so we can likely keep this one for use in the signature matrix.
+
+For the other two Fluorophores (Alexa Fluor 647 and FITC/Alexa Fluor 488), they correspond to the markers used to characterize the Mucosal-associated Invariant T cells (MAITs, Va7.2) and Natural Killer T cells (NKTs, Va24Ja18). Since these can be rare populations, for cell single-color controls, a back-up of the same fluorophore on CD3 instead was also acquired. These in turn were also used for the single-color bead controls to provide equivalents.
+ 
+Additionally, checking the ImmPort metadata and the paper, the Va24Ja18 antibody vs. hCD1d tetramer were on FITC/Alexa Fluor 488 respectively, so there is an additional single-color present than would be expected. 
+
+Ultimately, we can exclude these individual files from use in creating the gates by filtering out their names from the template. 
+
+```{r}
 KeptBeads <- BeadMatchTemplate |>
      filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_Dump_CD19 Pacific Blue (Beads).1237120.fcs") |>
      filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 Alexa Fluor 488 (Beads).1237106.fcs") |>
      filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 Alexa Fluor 647 (Beads).1237107.fcs") |>
      filter(!name %in% "DTR_2023_ILT_00-Reference Group-DR_CD3 FITC (Beads).1237108.fcs")  
+```
 
+And checking quickly, we can see no duplicate fluorophores are left
+
+```{r}
 KeptBeads |> group_by(Fluorophore) |> mutate(Count=row_number()) |>
      ungroup() |> filter(Count > 1) |> pull(Fluorophore) # No duplicates
 ```
 
 ```{r}
+KeptBeads
+```
+
+We have 29 rows (one including an unstained). The Viability (Zombie NIR)  fluorophore was only acquired with cells, so given this datasets context, everything checks out (yes, this is why metadata for an ImmPort repository is important, can you imagine trying to figure this all out without help!?!?!?!)
+
+### InitialUnmixSpanGates
+
+As we saw during [Week 12](), even when working with a single-fluorophore, there are a lot of moving pieces when it comes to extracting out a normalized fluorescent signature from an individual single-color. Combined with the fact that most spectral flow cytometry panels feature more than just one fluorophore, the need to be able to scale up accordingly is important if we have any hope of routinely unmixing in R. 
+
+Fortunately, `flowGate` provides an easy mechanism by which we can create "spanGates". Now that the new version includes the ability to modify individual gates, this means that once the gates are created, adjusting them after the fact is relatively feasible. The only tricky component remaining was creating peak detector gates based on the correct fluorophore single color control. To faciliate this process, `Luciernaga` now has an `InitialUnmixSpanGates()` function, that when provided the GatingSet object and completed template, will iterate through the gate creation process for you. Subsequently, you would only need to adjust the "spanGates" that get created. 
+
+Double checking, lets see which gates are currently present on our GatingSet
+
+```{r}
+#| eval: FALSE
 plot(BeadsSC_GatingSet)
+```
 
-devtools::document("/home/david/Documents/Luciernaga")
-devtools::load_all("/home/david/Documents/Luciernaga")
+![](images/53_CurrentlyPresentGates.png)
 
+Since we are working with beads, lets grab that final cleanup gate "singlets". Lets also set the initial gate boundaries (based on percentiles) to 0.75 and 0.80 so that we can make sure to see the gates as we iterate through their creation. 
+
+```{r}
+#| eval: FALSE
 InitialUnmixSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, subset="singlets", minpercentile=0.75, maxpercentile = 0.80)
 ```
 
-## Checking Spans
+As the gates get created, the progress bar in turn gets updated
+
+![](images/54_InitialProgressBar.png)
+
+And finally, let's check what gates are now present
 
 ```{r}
-#| eval: false
+#| eval: FALSE
+plot(BeadsSC_GatingSet)
+```
 
-#Dataset <- flowWorkspace::gs_pop_get_count_fast(BeadsSC_GatingSet)
-#View(Dataset)
+![](images/55_TheGates.png)
+
+### CheckUnmixingSpanGates
+
+Alright, the most tedious part of the process (individual peak detector gate creation) is now out of the way. Lets now move on to fixing this initially applied gate placements, because there is no way "minpercentile=0.75" and "maxpercentile = 0.80" are correct across the board. 
+
+#### Behind the Scenes
+
+First off, before running `Luciernaga`'s `CheckUnmixSpanGates()` function, lets check some of the basic mechanics that it is iterating through behind the scenes. First, lets start by running `gs_apply_gate_check()` for the appropiate single-color control specimen, with the corresponding newly created gate. 
+
+```{r}
+#| eval: FALSE
+
+# pData(BeadsSC_GatingSet) # Sample 16 is the APC-Fire 810 single color unmixing control
 
 gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810", sample=16, AdjustAll=FALSE)
+```
 
-gs_pop_get_gate(BeadsSC_GatingSet, "APC-Fire 810")
+spanGate should already be selected, to adjust the gate, draw a span gate for the desired region of interest. Then select done. 
 
-gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810", sample=16, AdjustAll=TRUE)
+![](images/57_SpanAdjustment.png)
 
+Sometimes, the plot is off-scale. To rescale, note the approximate X value that you want to increase to, select enable manual coords, enter the value, and then proceed and redraw accordingly (please note some sporadic bugs present)
+
+![](images/56_ManualAdjustment.png)
+
+Lets verify that the gate edit was indeed recorded. 
+
+```{r}
+#| eval: FALSE
 gs_pop_get_gate(BeadsSC_GatingSet, "APC-Fire 810")
 ```
 
+![](images/58_OnlyOneAdjustment.png)
+
+As you can see, only the coordinates for our designated specimen were adjusted, with all the other spans remaining at their initial default. If we had wanted wanted to adjust across the board, we would set the AdjustAll argument to FALSE (which we will explore more in-depth during [Week 13] when deriving spillover matrices) 
+
+### Iterating through the Spans
+
+Now that we have a bit of insight as to the mechanics, lets run `CheckUnmixingSpanGates()`. It will iterate through the gates designated by the template, launching the Shiny app for each gate sequentially. This wrapper function enables a quicker method by which the gates from `InitialUnmixSpanGates()` can be adjusted. 
+
 ```{r}
+#| eval: FALSE
 CheckUnmixingSpanGates(template=KeptBeads, gs=BeadsSC_GatingSet, AdjustAll=TRUE)
 ```
 
+![](images/59_BUV.png)
+
+![](images/59_BV480.png)
+
+![](images/59_BV786.png)
+
+![](images/59_APCR700.png)
+
+### Saving the GatingSet
+
+As we saw, this allows for a rapid initial setup and adjustment of span gates for the peak detector gates matched to their corresponding single-color fluorophore. Now that those gates were created and adjusted, lets save out another intermediate .gs file for subsequent use. 
+
 ```{r}
-save_gs(BeadsSC_GatingSet, "outputs/BeadsSCs_GS2_Amplified.gs")
+#| eval: FALSE
+BeadsSCSaveHere <- file.path(OutputLocation, "BeadsSCs_GS_Amplified.gs")
+
+save_gs(BeadsSC_GatingSet, BeadsSCSaveHere)
+
+# BeadsSC_GatingSet <- load_gs(BeadsSCSaveHere )
 ```
 
-## Load back in
+### Retrieving Average Signature
+
+At this point, we have created the peak detector gates, and adjusted them on basis of their respective single-color unmixing controls. Now, we just need to retrieve the cells present in those gates, reverse the transformation, and take the average measurement across each detector to get back the combination of the fluorophore + autofluorescence signal. 
+
+As we saw during [Week 12](), individually this can be done relatively simply. But when we start talking specifying out the code for 10, 20, 30, 40, 50 or 60 fluorophores, we end up considering where in life we went wrong and ended up in this line of work. In an attempt to keep us sane just a little longer, we can use the `RetrieveAverageSignature()` function to manage this step for each of the rows present in our assembled template. 
 
 ```{r}
-BeadsSC_GatingSet <- load_gs("outputs/BeadsSCs_GS2_Amplified.gs")
-```
-
-```{r}
-#Backup <- KeptBeads
-#KeptBeads <- Backup[c(1, 9, 13),]
-
+#| eval: FALSE
 UpdatedTemplate <- RetrieveAverageSignature(template=KeptBeads, gs=BeadsSC_GatingSet, inverse.transform = TRUE)
+UpdatedTemplate
 ```
 
+![](images/60_ExpandedTemplate.png)
+
+As we can see, the retrieved signature values for each fluorophore have been appended on as additional columns. These values still are the combination of both the fluorophore and background, so we need to mediate the autofluorescence subtraction. To do this, we first need to retrieve and add back in the background signal for our negative (BeadsUnstained) which currently is showing up as NA values for its respective row. 
+
 ```{r}
+#| eval: FALSE
 BeadUnstained <- GateExprsIterated(gs=BeadsSC_GatingSet, sample=1,
  gate="singlets", excludeThese="FSC|SSC|Time|-H")
-
-colnames(UpdatedTemplate)
-UpdatedTemplate[1,7:ncol(UpdatedTemplate)] <- BeadUnstained[2:ncol(BeadUnstained)]
-
-head(UpdatedTemplate, 3) # BeadUnstained Detector Values Updated
+BeadUnstained
 ```
+
+![](images/61_BeadUnstainedValues.png)
+
+Checking to the UpdatedTemplate, which has the existing columns
 
 ```{r}
-# Backup <- UpdatedTemplate
-# UpdatedTempalte <- Backup
-#UpdatedTemplate <- UpdatedTemplate[c(1, 9, 13),]
+#| eval: FALSE
+colnames(UpdatedTemplate)
+```
 
+![](images/62_UpdatedColnames.png)
+
+So, knowing which row and which column, lets paste it back in
+
+```{r}
+#| eval: FALSE
+UpdatedTemplate[1,7:ncol(UpdatedTemplate)] <- BeadUnstained[2:ncol(BeadUnstained)]
+UpdatedTemplate
+```
+
+![](images/63_AssembledTemplate.png)
+
+### Background Subtraction
+
+With the template now containing the detector values for both our fluorophores, as well as the unstained, we can now proceed to subtract out the background. This can be done using the `BackgroundSubtraction()` wrapper from `Lucierngaga`, which mediates the subtraction by matching the name found in the Negative column to the matching unstained name found in the Fluorophore column. We also have the option to go ahead and normalize (i.e. scale the signal from 0 to 1) and whether to keep the unstained values or not (in this case since we are working with beads, lets keep it FALSE (since we won't be calculating bead autofluorescence from our cells at the time of unmixing))
+
+```{r}
+#| eval: FALSE
 BeadFluorophoreSignatures <- BackgroundSubtraction(data=UpdatedTemplate, Normalize=TRUE, keepNegatives=FALSE)
 ```
+
+![](images/64_SubtractedValues.png)
+
+Before we go anywhere else, lets save this signature matrix out as a .csv for safe keeping/comparison. 
+
+```{r}
+#| eval: FALSE
+StoreHere <- file.path(OutputLocation, "BeadInitialSignatureMatrix.csv")
+write.csv(BeadFluorophoreSignatures, StoreHere, row.names=FALSE)
+```
+
+Which can then subsequently be read back in
+
+```{r}
+StoreHere <- file.path(OutputLocation, "BeadInitialSignatureMatrix.csv")
+BeadFluorophoreSignatures <- read.csv(StoreHere, check.names=FALSE)
+```
+
+Alright, lets check and see how atrocious our initial span gates really were
 
 ```{r}
 Plot <- VisualizeSignatures(columnname="Fluorophore", data=BeadFluorophoreSignatures,
@@ -191,10 +483,12 @@ Plot <- VisualizeSignatures(columnname="Fluorophore", data=BeadFluorophoreSignat
 plotly::ggplotly(Plot)
 ```
 
-# Cell Single-Colors
+Oh dear! Let's circle back to troubleshooting those negative signatures in a little bit. 
+
+## Cell Single-Colors
 
 ```{r}
-CellsSC_GatingSet <- load_gs("outputs/CellsSCs_GS1.gs")
+CellsSC_GatingSet <- load_gs("outputs/CellsSCs_GS.gs")
 ```
 
 ```{r}
@@ -203,7 +497,7 @@ plot(CellsSC_GatingSet)
 ```
 
 
-## Metadata
+### Metadata
 
 ```{r}
 #| eval: TRUE
@@ -274,7 +568,7 @@ devtools::load_all("/home/david/Documents/Luciernaga")
 InitialUnmixSpanGates(template=KeptCells, gs=CellsSC_GatingSet, subset="scatter", minpercentile=0.75, maxpercentile = 0.99)
 ```
 
-## Checking Spans
+### Checking Spans
 
 ```{r}
 CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
@@ -284,7 +578,7 @@ CheckUnmixingSpanGates(template=KeptCells, gs=CellsSC_GatingSet, AdjustAll=TRUE)
 save_gs(CellsSC_GatingSet, "outputs/CellsSC_GS2_Amplified.gs")
 ```
 
-## Load back in
+### Load back in
 
 ```{r}
 CellsSC_GatingSet <- load_gs("outputs/CellsSC_GS2_Amplified.gs")
@@ -340,119 +634,13 @@ plotly::ggplotly(Plot)
 ```
 
 
+# Take Away
 
+In this walk-through, we explored how to orchestrate the creation and adjustment of peak detector gates for our single-color controls. We saw examples for both cells and beads. We still left open the need to verify whether the extracted fluorescent signatures was indeed correct, or whether gates needed to be redrawn. 
 
+# Additional Resources
 
-
-
-
-
-
-
-
-
-
-
-
-
-# Bug Fixes
-
-
-```{r}
-#| eval: FALSE
-
-TheGatingTable <- tibble::tribble(
-  ~filterId,    ~dims,                          ~subset,      
-  "APC-Fire 810",   list("R8-A", "V7-A"),     "singlets")
-
-flowGate::gs_apply_gating_strategy(BeadsSC_GatingSet, gating_strategy = TheGatingTable, sample=16)
-
-plot(BeadsSC_GatingSet)
-
-#gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 810", sample=16)
-
-TheGatingTable <- tibble::tribble(
-  ~filterId,    ~dims,                          ~subset,      
-  "APC-Fire 750",   list("R8-A"),     "singlets")
-
-flowGate::gs_apply_gating_strategy(BeadsSC_GatingSet, gating_strategy = TheGatingTable, sample=16)
-
-plot(BeadsSC_GatingSet)
-
-#gs_apply_gate_check(gs=BeadsSC_GatingSet, gate="APC-Fire 750", sample=16)
-```
-
-# Previous Code
-
-And lets save for now
-
-```{r}
-#| eval: FALSE
-
-StorageLocationAndName <- file.path(StorageLocation, "BeadsGS.gs")
-save_gs(SFC_GatingSet, StorageLocationAndName)
-```
-
-
-Once the gates are drawn, we can quickly validate that the gate placements will suffice for what we are trying to accomplish today. We can use the `Utility_UnityPlots()` from the `Luciernaga` package to compare the same gate across all specimens
-
-
-```{r}
-#| eval: FALSE
-library(Luciernaga)
-
-Plot <- Utility_UnityPlot(x="FSC-A", y="FSC-H",
- GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
- removestrings=".fcs", marginsubset="root", gatesubset="singlets", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
-
-Plot2 <- Utility_UnityPlot(x="SSC-A", y="SSC-B-A",
- GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
- removestrings=".fcs", marginsubset="singlets", gatesubset="nonRBCs", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
-
-Plot3 <- Utility_UnityPlot(x="FSC-A", y="SSC-A",
- GatingSet=SFC_GatingSet, sample.name="GUID", bins=70,
- removestrings=".fcs", marginsubset="singlets", gatesubset="scatter", returntype="patchwork", reference=NULL, clearance=0.2, gatelines=FALSE)
-```
-
-![](images/Singlets1.png)
-
-![](images/Singlets2.png)
-
-![](images/nonRBCs1.png)
-
-![](images/nonRBCs2.png)
-
-![](images/Scatter1.png)
-
-![](images/Scatter2.png)
-
-With the gates reasonably enough placed (except for the Full-Stained 1 specimen), lets proceed and see what we have for counts. 
-
-```{r}
-#| eval: FALSE
-Counts <- gs_pop_get_count_fast(SFC_GatingSet, "count")
-Counts$Population <- basename(Counts$Population)
-Counts |> filter(Population %in% "scatter")
-```
-
-![](images/00_Counts.png)
-
-For a raw .fcs file from a 5-laser Cytek Aurora, downsampling to 17500 cells puts us just under the 5 MB limit. Seeing as we have enough cells, lets proceed to export out the downsampled .fcs files to our output folder. 
-
-```{r}
-#| eval: FALSE
-purrr::walk(.x=SFC_GatingSet, subset="scatter", .f=Downsampling,
- DownsampleCount=17500, addon="scatter", returnType="fcs",
- StorageLocation=OutputLocation)
-```
-
-# Proceeding
-
-The resulting files are now under 5 MB. I proceeded to remove the original ones from the "data" folder, and replaced them with the files from the outputs folder. These were then transferred to GitHub for use in this walk-through example.
-
-![](images/00_FinalDownsampled.png)
-
-To return to where you were in the TRU-OLS walk-through, click [here](/course/community/TRU-OLS/index.qmd#ols-unmixing-via-luciernaga)
+[Examples]()
 
 ::: {style="text-align: right;"}
 [![AGPL-3.0](https://www.gnu.org/graphics/agplv3-with-text-162x68.png)](https://www.gnu.org/licenses/agpl-3.0.en.html) [![CC BY-SA 4.0](https://licensebuttons.net/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
