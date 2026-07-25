@@ -2071,6 +2071,8 @@ All things said and done, our viability dye single-color control appears to be c
 
 #### APC-Fire 750
 
+And last of the unexplored, we have APC-Fire 750, which is conjugated with CD27. Since CD27 is found on a lot of T cells, we will likely have bright signal, but we will need to watch out for potential tandem degradation. 
+
 ```{r}
 APCFire750 <- LuciernagaIntegration(template=KeptCells[28,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
@@ -2082,12 +2084,16 @@ Plot <- APCFire750$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Right off the back, we see a distinct step ladder on V7 (up to 0.33 relative to the primary peak). However, we also have a step-ladder appearance on the R2 detector, which is reminiscent of the tandem degradation issues we saw for APC-Fire 810 back during the [Week 12]() walk-through. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- APCFire750$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+Wooh! After digging through all these fluorophores, we have found a fun one! When looking at the grouped normalized signatures of individual cells, we can see that we have some cells showing substantial amounts of R1 (aligning with a degradation back to APC). Likewise, as more of the fluorophore on the individual cell is degraded to APC's R1 detector, the less bright it is for the R7 detector, which leaves the autofluorescence residual peak occupying a more substantial amount of the area under the signature curve. 
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -2096,18 +2102,24 @@ Plot <- APCFire750$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+Lets check the proportion plots within our positive gated region as distributed across our signature variants
 
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
+```{r}
+Plot <- APCFire750$ProportionPlot
+plotly::ggplotly(Plot)
+```
+
+So yeah, overall, within our gated region, substantial portion of cells have the autofluorescence as their third peak detector instead of the YG9 detector, which is what we see materialize in the amalgamated plot
+
+Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. Lets pass these individually to `QC_WhatsThis_()` and gage the difference. 
 
 ```{r}
 Data <- APCFire750$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("R7_10-R8_08-YG9_02", "Average", "R7_10-R8_08-V7_06"))
 ```
 
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
-
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="R7_10-R8_08-YG9_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -2115,14 +2127,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="R7_10-R8_08-V7_06", columnname="Cluster", data=Data, NumberHits=10, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.97, 0.94, 0.71)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -2144,14 +2156,22 @@ ggplot(df) +
   theme_bw()
 ```
 
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
+Before we call it, lets compare the best signature against the reference signature
 
 ```{r}
-Plot <- APCFire750$ProportionPlot
-plotly::ggplotly(Plot)
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plot[1]
+plotly::ggplotly(Plot[[2]])
 ```
 
+:::{.callout-caution title="Caution"}
+Overall, clear signs that the APC-Fire 750 fluorophore is starting to degrade on this single-color control. However, the overall proportion of cells with mostly intact fluorophore is still high enough that we can get a clean signature from them. The average signature does not have as much of the R1 signature, but does show a peak of V7 detector, so if we shifted the gate to the right, we might decrease this contribution overall. 
+:::
+
+
 #### APC-Fire 810
+
+And back to where we started, let's revisit the fluorophore from our [Week 12]() walk-through. APC-Fire 810, conjugated to CD38, should be bright given its use of cord blood mononuclear cells for the single-color control, should be bright. Should. 
 
 ```{r}
 APCFire810 <- LuciernagaIntegration(template=KeptCells[29,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -2164,6 +2184,8 @@ Plot <- APCFire810$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Once again, minor step ladder, but also the warning signs for the R1/R2 detector where we see a similar pattern. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
@@ -2171,25 +2193,33 @@ Plot <- APCFire810$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+And without a doubt, still the most dramatic example of tandem degradation we have encountered for this panel. Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
 ```{r}
 Plot <- APCFire810$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+Substantial amount of tandem degradation ending up in the overall signature (in contrast to APC-Fire 750 where although present, wasn't as prevalent overall). Lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
+
+```{r}
+Plot <- APCFire810$ProportionPlot
+plotly::ggplotly(Plot)
+```
+
+And yeah, overall, quite a distribution across the board for the signature variants for the cells in our gated region. 
 
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
 Data <- APCFire810$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("R8_10-R2_02-YG4_01", "Average", "R8_10-R2_09-YG4_05"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="R8_10-R2_02-YG4_01", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -2197,14 +2227,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="R8_10-R2_09-YG4_05", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.96, 0.89, 0.87)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -2226,12 +2256,18 @@ ggplot(df) +
   theme_bw()
 ```
 
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
+And finally contrasting "Best" signature across the reference
 
 ```{r}
-Plot <- APCFire810$ProportionPlot
-plotly::ggplotly(Plot)
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plot[1]
+plotly::ggplotly(Plot[[2]])
 ```
+
+:::{.callout-warning title="Fail"}
+Too many warning signs for this fluorophore, the average signature ends up having way too much of contributions from both autofluorescence as well as the tandem degradation contribution from APC. Even the best signature still has elements of both, so we would likely be better replacing the single-color control with a better quality one for this particular experiment
+:::
+
 
 
 ## Unstained Controls
