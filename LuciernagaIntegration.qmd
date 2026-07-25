@@ -54,7 +54,7 @@ Next up, specify the storage (.fcs files) and output (.gs folder) locations (if 
 #StorageLocation <- file.path("course", "SDY3080", "data", "SDY3080")
 StorageLocation <- file.path("data", "SDY3080")
 
-#OutputLocation <- file.path("course", "SDY3080", "outputs")
+# OutputLocation <- file.path("course", "SDY3080", "outputs")
 OutputLocation <- file.path("outputs")
 ```
 
@@ -1010,17 +1010,13 @@ Plots[[1]]
 plotly::ggplotly(Plots[[2]])
 ```
 
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
-```
-
 :::{.callout-tip title="Pass"}
 Only minor differences noticed vs. the reference, and everything in terms of the signature of the cells within our gated region appears to be consistent. 
 :::
 
 #### BV750
 
-Next up, we have BV750, which is conjugated to TNFa. Given that this cell single-color control was prepared with adult donor PBMCs, stimulated with PMA-ionomycin, we expect the signal to be bright. 
+Next up, we have BV750, which is conjugated to IFNg. Given that this cell single-color control was prepared with adult donor PBMCs, stimulated with PMA-ionomycin, we expect the signal to be bright. 
 
 ```{r}
 BV750 <- LuciernagaIntegration(template=KeptCells[15,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1168,6 +1164,7 @@ FITC <- LuciernagaIntegration(template=KeptCells[17,], gs=CellsSC_GatingSet, Gue
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
 
 ```{r}
+#| eval: FALSE
 Plot <- FITC$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
@@ -1175,6 +1172,7 @@ plotly::ggplotly(Plot)
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
+#| eval: FALSE
 Plot <- FITC$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
@@ -1182,6 +1180,7 @@ plotly::ggplotly(Plot)
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
 ```{r}
+#| eval: FALSE
 Plot <- FITC$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
@@ -1190,6 +1189,7 @@ plotly::ggplotly(Plot)
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
+#| eval: FALSE
 Data <- FITC$AveragedSignature_Data |>
    filter(Cluster %in% c())
 ```
@@ -1197,20 +1197,24 @@ Data <- FITC$AveragedSignature_Data |>
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
+#| eval: FALSE
 #| code-fold: TRUE
 cos_vals <- c(1)
 theta <- acos(cos_vals)
@@ -1237,6 +1241,7 @@ ggplot(df) +
 Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
 
 ```{r}
+#| eval: FALSE
 Plot <- FITC$ProportionPlot
 plotly::ggplotly(Plot)
 ```
@@ -1397,7 +1402,11 @@ Overall, the average signature is close to where it needs to be, but there are a
 
 ### YellowGreen
 
+We now jump to the Yellow-green laser (as this 29-color panel was originally intended for a 4-laser system so didn't take full advantage of the blue laser detectors). As many of these fluorophores are PE conjugates, the main cause of concern for cells is non-specific staining arising from antigen-presenting cells tendency to latch-on/endocytose the PE. We will see if we can spot any of these cases as we move through the cell single-color controls. 
+
 #### PE
+
+First off on the Yellow-green, we have our PE fluorophore, conjugated in this case to NKG2D. This marker is well expressed on the NK cells, so will likely be a bright antigen x fluorophore combination. 
 
 ```{r}
 PE <- LuciernagaIntegration(template=KeptCells[20,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1410,12 +1419,23 @@ Plot <- PE$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Looking at the signatures retrieved from the 10% bins across our "positive" gate, we can see the typical pattern of the two fluorophore peaks (YG1, B4) appearing consistent, with a bit of a step ladder appearance from autofluorescence residuals around the V8 detector
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- PE$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+So overall, probably not quite as bright a combination as we originally anticipated. We will need to check vs. the reference signature to determine whether we are expecting the PE to have some emission on the V8. 
+
+```{r}
+Plots <- QC_ReferenceLibrary("PE$", 64, returnPlots=TRUE)
+plotly::ggplotly(Plots[[2]])
+```
+
+So yep, we are expecting some contribution from the fluorophore, but relatively around V8 (not soo much of the shoulder detectors)
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -1429,13 +1449,13 @@ Lets retrieve the underlying data for this plot, and keep the Average, as well a
 
 ```{r}
 Data <- PE$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("Average", "YG1_10-B4_08-V8_04", "YG1_10-B4_07-V8_05"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG1_10-B4_08-V8_04", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -1443,14 +1463,21 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG1_10-B4_07-V8_05", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+```
+
+So average is the closest with a cosine of 0.98, then 0.94, and 0.90. 
+
+```{r}
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+plotly::ggplotly(Plot[[2]])
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.98, 0.94, 0.9)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -1479,7 +1506,13 @@ Plot <- PE$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
-#### PE-Dazzle594
+:::{.callout-tip = "Pass"}
+Overall, our average is fairly close to what we expect to see for the reference signature. A couple things to note, the secondary peak B4 is higher than the reference. Whether this is due to instrument-specific gain settings (or because something clipping the main YG1) would be something we should check vs. other PE signatures. We can also attempt to clean up some of the autofluorescence residual sholder by shifting the gate slightly to the right to reduce the contribution by including additional bright for PE cells. 
+:::
+
+#### PE-Dazzle 594
+
+Next up, we have PE-Dazzle 594, which is conjugated to TNFa. Seeing as the cell single-color control used adult PBMCs stimulated with PMA-ionomycin, we expect this signal to be bright. However, it is on a tandem, so it may yet prove interesting. 
 
 ```{r}
 PEDazzle594 <- LuciernagaIntegration(template=KeptCells[21,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1492,76 +1525,37 @@ Plot <- PEDazzle594$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
-Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
+Nice! Almost no variation whatsoever across any of the 10% bins. Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- PEDazzle594$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+Alright, barely any variant signatures by the `LuciernagaQC()` approach. Lets wrap this up and move to the next fluorophore
 
 ```{r}
 Plot <- PEDazzle594$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
-
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
-
 ```{r}
-Data <- PEDazzle594$AveragedSignature_Data |>
-   filter(Cluster %in% c())
-```
-
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
-
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Data <- PEDazzle594$AveragedSignature_Data 
 ```
 
 ```{r}
-QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Plots <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plots[[1]]
+plotly::ggplotly(Plots[[2]])
 ```
 
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
-```
+:::{.callout-tip title="Pass"}
+Fluorophore is in good condition, and the combination of antigen x fluorophore means we are getting a consistent signature for our gating region. Next!
+:::
 
-If we visualized the difference in these angles, we would see the following
-
-```{r}
-#| code-fold: TRUE
-cos_vals <- c(1)
-theta <- acos(cos_vals)
-
-df <- data.frame(
-  label = paste0("cos = ", cos_vals),
-  angle_deg = round(theta * 180 / pi, 1),
-  x = sin(theta),
-  y = cos(theta)
-)
-
-ggplot(df) +
-  geom_segment(aes(x = 0, y = 0, xend = x, yend = y, color = label),
-               arrow = arrow(length = unit(0.25, "cm")),
-               linewidth = 1) +
-  coord_fixed(xlim = c(-0.1, 1), ylim = c(-0.1, 1.1)) +
-  geom_hline(yintercept = 0, color = "grey80") +
-  geom_vline(xintercept = 0, color = "grey80") +
-  labs(x = NULL, y = NULL, color = "Vector",
-       title = NULL) +
-  theme_bw()
-```
-
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
-
-```{r}
-Plot <- PEDazzle594$ProportionPlot
-plotly::ggplotly(Plot)
-```
 
 #### PE-Cy5
+
+Next up, we have PE-Cy5, conjugated to CD25. As the high-affinity IL-2 receptor, this antigen will be a little more distributed among the individual cell subsets, so lets see how this combination performs for this panel. 
 
 ```{r}
 PECy5 <- LuciernagaIntegration(template=KeptCells[22,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1574,12 +1568,16 @@ Plot <- PECy5$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Oh no! As we place 10% bins across our "Positive" gate, we can already see that the signatures from each bin show a step-ladder for the autofluorescence peak detectors. Worse, they are already approaching the height of PE-Cy5's secondary peak (B8), suggesting this combination is really dim. Somehow, not what I expect when I hear the words PE-Cy5 normally. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- PECy5$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+And once again, the appearance appears to be not so bad (until we remember this is `LuciernagaQC()` getting rid of the resulting negatives). However, we can see that the B8 detector upon normalization appears like a step-ladder, which suggest we are having some tandem degradation occuring for this particular fluorophore. 
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -1588,18 +1586,26 @@ Plot <- PECy5$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+So overall, the B8 peak is about halfway between the low MFI and High MFI variants. Lets check the proportion plots to see how cells are distributed across the signature variants
+
+```{r}
+Plot <- PECy5$ProportionPlot
+plotly::ggplotly(Plot)
+```
+
+So most are still where they roughly need to be at, fortunately. But not seeing what is happening to the negatives may be painting a rosy picture. 
 
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
 Data <- PECy5$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("YG5_10-B8_04", "Average", "YG5_10-B8_08"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG5_10-B8_04", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -1607,14 +1613,16 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG5_10-B8_08", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-If we visualized the difference in these angles, we would see the following
+So 0.86, 0.96 and 0.96 for the cosine values. 
+
+If we visualized the difference in these angles, we would see the following. 
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.86, 0.96)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -1636,14 +1644,23 @@ ggplot(df) +
   theme_bw()
 ```
 
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
+And if we contrast the average against the reference signature. 
 
 ```{r}
-Plot <- PECy5$ProportionPlot
-plotly::ggplotly(Plot)
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plot[[1]]
+plotly::ggplotly(Plot[[2]])
 ```
 
+:::{.callout-warning title="Fail"}
+So while the regular "Average" signature at first glance appears similar enough to the PE-Cy5 reference, there are clear signs of tandem degradation occuring for this fluorophore, additionally, the unmodified `LuciernagaQC()` argument is removing the negative values, so painting a rosy picture. In actual practice, when we replaced this cell single-color control with the bead single-color control, our unmixing ended up improving substantially. Not a good combination in actual practice, despite PE-Cy5's reputation as being bright. 
+:::
+
+
+
 #### PE-Vio770
+
+And last in our yellow-green laser, we have PE-Vio 770, conjugated to PD1. Antigen wise, not likely going to be spectacularly bright given the sample type, but the fluorophore is relatively bright. So we shall see. 
 
 ```{r}
 PEVio770 <- LuciernagaIntegration(template=KeptCells[23,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1656,10 +1673,19 @@ Plot <- PEVio770$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Alright, not bad overall, a step ladder for V7, but we have seen worse. Also some clipping to the secondary B13 peak, so might have a bit of tandem degradation in the system. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- PEVio770$LuciernagaQC_Signatures
+plotly::ggplotly(Plot)
+```
+
+Alright, so a definite step-ladder for the V7 detector, but there is still fluorophore in the system that looks relatively intact. Lets check the proportion plots to see how cells are distributed across the variant signatures. 
+
+```{r}
+Plot <- PEVio770$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
@@ -1670,18 +1696,19 @@ Plot <- PEVio770$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+So overall, a little bit of the residual autofluorescence is ending up in the fluorophore signature after the background is subtracted, but not horrid amounts. 
 
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
 Data <- PEVio770$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("YG9_10-B13_06-V15_02", "Average", "YG9_10-B13_06-V7_05"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG9_10-B13_06-V15_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -1689,14 +1716,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="YG9_10-B13_06-V7_05", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-If we visualized the difference in these angles, we would see the following
+So cosine wise, 0.99, 0.97 and 0.85. If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.99, 0.97, 0.85)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -1718,12 +1745,9 @@ ggplot(df) +
   theme_bw()
 ```
 
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
-
-```{r}
-Plot <- PEVio770$ProportionPlot
-plotly::ggplotly(Plot)
-```
+:::{.callout-caution title="Caution"}
+So definitely not a bright antigen x fluorophore combination, and some potential start of tandem degradation, but the vast majority of the fluorophore appears to be in good condition. I would reposition the positive gate to the right to improve the overall unmixing going forward. 
+:::
 
 ### Red
 
@@ -1738,6 +1762,7 @@ APC <- LuciernagaIntegration(template=KeptCells[24,], gs=CellsSC_GatingSet, Gues
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
 
 ```{r}
+#| eval: FALSE
 Plot <- APC$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
@@ -1745,6 +1770,7 @@ plotly::ggplotly(Plot)
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
+#| eval: FALSE
 Plot <- APC$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
@@ -1752,6 +1778,7 @@ plotly::ggplotly(Plot)
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
 ```{r}
+#| eval: FALSE
 Plot <- APC$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
@@ -1760,6 +1787,7 @@ plotly::ggplotly(Plot)
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
+#| eval: FALSE
 Data <- APC$AveragedSignature_Data |>
    filter(Cluster %in% c())
 ```
@@ -1767,20 +1795,24 @@ Data <- APC$AveragedSignature_Data |>
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
+#| eval: FALSE
 #| code-fold: TRUE
 cos_vals <- c(1)
 theta <- acos(cos_vals)
@@ -1807,6 +1839,7 @@ ggplot(df) +
 Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
 
 ```{r}
+#| eval: FALSE
 Plot <- APC$ProportionPlot
 plotly::ggplotly(Plot)
 ```
@@ -1824,6 +1857,7 @@ AF647 <- LuciernagaIntegration(template=KeptCells[25,], gs=CellsSC_GatingSet, Gu
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
 
 ```{r}
+#| eval: FALSE
 Plot <- AF647$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
@@ -1831,6 +1865,7 @@ plotly::ggplotly(Plot)
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
+#| eval: FALSE
 Plot <- AF647$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
@@ -1838,6 +1873,7 @@ plotly::ggplotly(Plot)
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
 ```{r}
+#| eval: FALSE
 Plot <- AF647$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
@@ -1846,6 +1882,7 @@ plotly::ggplotly(Plot)
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
+#| eval: FALSE
 Data <- AF647$AveragedSignature_Data |>
    filter(Cluster %in% c())
 ```
@@ -1853,20 +1890,24 @@ Data <- AF647$AveragedSignature_Data |>
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
+#| eval: FALSE
 QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
+#| eval: FALSE
 #| code-fold: TRUE
 cos_vals <- c(1)
 theta <- acos(cos_vals)
@@ -1893,6 +1934,7 @@ ggplot(df) +
 Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
 
 ```{r}
+#| eval: FALSE
 Plot <- AF647$ProportionPlot
 plotly::ggplotly(Plot)
 ```
