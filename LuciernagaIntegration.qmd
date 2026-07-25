@@ -1243,6 +1243,8 @@ plotly::ggplotly(Plot)
 
 #### Spark Blue 550
 
+Next up, Spark Blue 550, conjugated with CD3. This combination should be relatively bright, but also some potential contribution from autofluorescence as they share the B3 detector. 
+
 ```{r}
 SparkBlue550 <- LuciernagaIntegration(template=KeptCells[18,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
@@ -1254,76 +1256,40 @@ Plot <- SparkBlue550$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
-Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
+Almost no impact across the 10% bins. Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- SparkBlue550$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+As we have anticipated, these minor differences end up being rounded up and down, to produce the two variant signatures. Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
 ```{r}
 Plot <- SparkBlue550$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
-
-```{r}
-Data <- SparkBlue550$AveragedSignature_Data |>
-   filter(Cluster %in% c())
-```
-
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
+For completionist sake, lets check vs. the reference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Data <- SparkBlue550$AveragedSignature_Data
 ```
 
 ```{r}
-QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plot[[1]]
+plotly::ggplotly(Plot[[2]])
 ```
 
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
-```
 
-If we visualized the difference in these angles, we would see the following
-
-```{r}
-#| code-fold: TRUE
-cos_vals <- c(1)
-theta <- acos(cos_vals)
-
-df <- data.frame(
-  label = paste0("cos = ", cos_vals),
-  angle_deg = round(theta * 180 / pi, 1),
-  x = sin(theta),
-  y = cos(theta)
-)
-
-ggplot(df) +
-  geom_segment(aes(x = 0, y = 0, xend = x, yend = y, color = label),
-               arrow = arrow(length = unit(0.25, "cm")),
-               linewidth = 1) +
-  coord_fixed(xlim = c(-0.1, 1), ylim = c(-0.1, 1.1)) +
-  geom_hline(yintercept = 0, color = "grey80") +
-  geom_vline(xintercept = 0, color = "grey80") +
-  labs(x = NULL, y = NULL, color = "Vector",
-       title = NULL) +
-  theme_bw()
-```
-
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
-
-```{r}
-Plot <- SparkBlue550$ProportionPlot
-plotly::ggplotly(Plot)
-```
+:::{.callout-tip title="Pass"}
+Across the board, the fluorophore looks good, with some minor autofluorescence residual present. If we really wanted, we could shift the gate slightly to the right to reduce this contribution overall.
+:::
 
 #### PerCP-Cy5.5
+
+Alright, on to the worst fluorophore ever. PerCP-Cy5.5, conjugated in this case with CD26. CD26 should be present on subsets of T cells, that should be sufficiently present to make it bright. However, the overall brightness of PerCP-Cy5.5 could also potentially come into play depending on the individual fluorophore vial. 
 
 ```{r}
 WorstFluorophore <- LuciernagaIntegration(template=KeptCells[19,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
@@ -1336,12 +1302,16 @@ Plot <- WorstFluorophore$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+At this point, quite distinct step-ladder appearance on the V7, UV7 and B3 peaks. The PerCP-Cy5.5 peaks B9, YG7 and R3 peaks appear consistent, although the V12 peak also appears to be showing variation, similar to what we saw for the APC-Fire 810 fluorophore during [Week 12](). 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- WorstFluorophore$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+And uff, we have a fuzzy caterpillar. We have lost the autofluorescence contribution due to rounding of the negative values by `LuciernagaQC()`, but we also have step-ladders on three of the PerCP-Cy5.5 peaks, suggesting substantial tandem degradation occuring for the antibody-fluorophores that are attaching to their antigen on the individual cells. 
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -1350,18 +1320,18 @@ Plot <- WorstFluorophore$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+Gritting our teeth, lets check how within the gated region, the proportion of cells that are matched to each of these variants. 
 
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
+```{r}
+Plot <- WorstFluorophore$ProportionPlot
+plotly::ggplotly(Plot)
+```
+
+A general gradient, across the board. Lets retrieve the Average, two of the peaks with the most varied YG7 signatures, and what appears to be a by-product of just the B9 detector. Lets pass these individually to `QC_WhatsThis()` and gage the difference.
 
 ```{r}
 Data <- WorstFluorophore$AveragedSignature_Data |>
-   filter(Cluster %in% c())
-```
-
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
-
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+   filter(Cluster %in% c("B9_10-YG6_05-R3_03","Average", "B9_10-YG6_00-R3_00", "B9_10-YG6_05-R3_02"))
 ```
 
 ```{r}
@@ -1369,14 +1339,26 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="B9_10-YG6_05-R3_03", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+```
+
+```{r}
+QC_WhatsThis(x="B9_10-YG6_05-R3_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+```
+
+And checking what appears to be a single part of the tandem
+
+```{r}
+Plots <- QC_WhatsThis(x="B9_10-YG6_00-R3_00", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plots[[1]]
+plotly::ggplotly(Plots[[2]])
 ```
 
 If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.99, 0.96, 0.94, 0.49)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -1398,12 +1380,20 @@ ggplot(df) +
   theme_bw()
 ```
 
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
+And finally, lets check average vs. the reference signature
 
 ```{r}
-Plot <- WorstFluorophore$ProportionPlot
-plotly::ggplotly(Plot)
+Plot <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+Plot[[1]]
+plotly::ggplotly(Plot[[2]])
 ```
+
+A little bit different, but this could also be how this tandem batch was formulated, so we would need to check several other examples for PerCP-Cy5.5 to be sure. 
+
+:::{.callout-caution title="Caution"}
+Overall, the average signature is close to where it needs to be, but there are also some clear signs of tandem degradation. For this particular single color, I would shift the gate to the right to try to ensure we are getting more of the intact fluorophore to avoid some of these issues. 
+:::
+
 
 ### YellowGreen
 
