@@ -226,16 +226,16 @@ Plot <- BUV395$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
-:::{.callout-caution}
+:::{.callout-caution title="Caution"}
 So, 2% of the cells being a BUV395 signature match, 26% matching the average, and 1% matching the dimmest. In terms of improved unmixing, if we could shift our original positive gate to the right (retaining brighter cells) the unmixing might improve overall. 
 :::
 
-### BUV496
+#### BUV496
 
-Lets tackle one of our most autofluorescently similar fluorophores, BUV496, conjugated in this case to CD8. Given it is a primary marker and how we gated, we can at least be reasonably confident that it should be relatively bright. 
+Lets next tackle one of our most autofluorescently similar fluorophores, BUV496, conjugated in this case to CD8. Given it is a primary marker and how we gated, we can at least be reasonably confident that it should be relatively bright. 
 
 ```{r}
-BUV496 <- LuciernagaIntegration(template=KeptCells[2,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BUV496 <- LuciernagaIntegration(template=KeptCells[2,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -245,6 +245,8 @@ Plot <- BUV496$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+As anticipated, the antigen-fluorophore combination alongside our gate placement on the bulk of the CD8 T cells means that there was little difference across 10% bins in terms of the overall signature. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
@@ -252,25 +254,25 @@ Plot <- BUV496$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+`LuciernagaQC()` only returns two variant signatures, the main diffeence being slightly different secondary V6 peaks. The difference between the two is likely attributable to the rounding applied to each detector by the function behind the scenes (values of 0.24 rounding down to 0.2, values of 0.25 rounding up to 0.3). 
+
+Seeing as we only have two signature variants, want to guess where the median signature ends up at? 
 
 ```{r}
 Plot <- BUV496$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
+Lets retrieve the underlying data for this plot for subsequent steps, no need to filter since we only have three signatures when you include the "Average".
 
 ```{r}
-Data <- BUV496$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+Data <- BUV496$AveragedSignature_Data
 ```
 
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
+Lets pass these signatures individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV7_10-V6_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -278,14 +280,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV7_10-V6_03", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-If we visualized the difference in these angles, we would see the following
+The first two return as cosine values of 1.00, while the last returns as 0.99 vs. the reference BUV496. Lets visualized the difference in these angles
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.99)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -314,11 +316,17 @@ Plot <- BUV496$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
+:::{.callout-tip title="Pass"}
+In this case, most of the variants are showing a signature reflective of the reference control. No change to our gate is required in this case. 
+:::
+
 
 #### BUV563
 
+Next up, we are tackling BUV563, which is conjugated to CD69. One thing to note, this was one of the single-color controls that was prepared with PMA-ionomycin activated cells. The `LuciernagaIntegration()` default is still to use internal negative with minimal fluorophore peak detector contribution, so we will see how this behaves compared to the previous fluorophores. 
+
 ```{r}
-BUV563 <- LuciernagaIntegration(template=KeptCells[19,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BUV563 <- LuciernagaIntegration(template=KeptCells[3,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -328,12 +336,16 @@ Plot <- BUV563$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Glancing at the resulting plot, there is a smidge of difference across the V7 detector as we compare the variant signatures across the bins, but overall the difference appears relatively minor compared to what we saw with BUV395. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
 Plot <- BUV563$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+The observation we saw is born out with the outputs from `LuciernagaQC()`, as we have four variant signatures, but similar to the case with BUV496, they appear to be noise related to the rounding of the relative heights of the secondary and third peaks.
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -342,65 +354,26 @@ Plot <- BUV563$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
-
-```{r}
-Data <- BUV563$AveragedSignature_Data |>
-   filter(Cluster %in% c())
-```
-
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
+At this point, it feels unecesary to dive further, but we can check the "Average" signature using `QC_WhatsThis()` for final verification. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Data <- BUV563$AveragedSignature_Data
 ```
 
 ```{r}
 QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
-```
-
-If we visualized the difference in these angles, we would see the following
-
-```{r}
-#| code-fold: TRUE
-cos_vals <- c(1)
-theta <- acos(cos_vals)
-
-df <- data.frame(
-  label = paste0("cos = ", cos_vals),
-  angle_deg = round(theta * 180 / pi, 1),
-  x = sin(theta),
-  y = cos(theta)
-)
-
-ggplot(df) +
-  geom_segment(aes(x = 0, y = 0, xend = x, yend = y, color = label),
-               arrow = arrow(length = unit(0.25, "cm")),
-               linewidth = 1) +
-  coord_fixed(xlim = c(-0.1, 1), ylim = c(-0.1, 1.1)) +
-  geom_hline(yintercept = 0, color = "grey80") +
-  geom_vline(xintercept = 0, color = "grey80") +
-  labs(x = NULL, y = NULL, color = "Vector",
-       title = NULL) +
-  theme_bw()
-```
-
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
-
-```{r}
-Plot <- BUV563$ProportionPlot
-plotly::ggplotly(Plot)
-```
+:::{.callout-tip title="Pass"}
+For BUV563, we didn't find any substantial signature variants, so our gate is likely fine as placed, and we can move on to screening the next fluorophore. 
+:::
 
 #### BUV615
 
+Next up, we have BUV615, which is conjugated to CCR4. If we are classifying in terms of marker expression, this is more on the chemokine side, so we may encounter some lower antigen density issues compared to the primary markers like CD8. 
+
 ```{r}
-BUV615 <- LuciernagaIntegration(template=KeptCells[1,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]]
+BUV615 <- LuciernagaIntegration(template=KeptCells[4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -410,6 +383,8 @@ Plot <- BUV615$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+Right off the bat, we can already see a step-ladder arising out of the typical autofluorescence peaks (V7, UV7, B3). This should prove an interesting fluorophore to screen if nothing else!
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
@@ -417,25 +392,39 @@ Plot <- BUV615$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+What in the world? We have a fuzzy caterpillar! If we unclick the lower signature variants, we eventually end up with the following plot
+
+![](images/Luciernaga_BUV615_01.png)
+
+We can tell that among the grouped individual cell normalized signature variants, everyone seems to be relatively uniform for the UV10 peak, but, there is a distinct gradient appearance to the YG3 peak. This may be a signal that the tandem is decoupling back into its respective components. 
+
+Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison, to better help us gage the extent that this may be happening at 
 
 ```{r}
 Plot <- BUV615$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
+Still appears variable. Lets check what the reference signature appears like for context. 
+
+```{r}
+Plot <- QC_ReferenceLibrary("BUV615", returnPlots=TRUE, NumberDetectors=64)[[2]]
+plotly::ggplotly(Plot)
+```
+
+So overall, the reference has a YG3 detector closer to 0.8, so we have signature variants appearing both below and above it. 
 
 Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
 
 ```{r}
 Data <- BUV615$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("UV10_10-YG3_02", "Average", "UV10_10-YG3_10"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV10_10-YG3_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -443,14 +432,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV10_10-YG3_10", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-If we visualized the difference in these angles, we would see the following
+Interesting, the signature with the lower YG3 peak relative to UV10 appears to be the degraded fluorophore signature variant, coming in at a cosine value of 0.76 vs. the BUV615 reference. By contrast, the "average" is 0.97, and the one with brightest BUV615 is at 0.98.  Lets visualize these angles. 
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.99, 0.98, 0.76)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -472,6 +461,8 @@ ggplot(df) +
   theme_bw()
 ```
 
+In terms of neither "Average" or "UV10_10-YG3_10" matching the reference signature, this is not uncommon, as tandem fluorophore batches often can vary in their assembly (as well as the reference itself may have similarly been affected, or had some individual instrument acquisition variance)
+
 Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
 
 ```{r}
@@ -479,11 +470,18 @@ Plot <- BUV615$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
+:::{.callout-warning title="Fail"}
+Overall, 11% of the individual cells had signatures similar to the "Average". Fully degraded on the YG3 detector was around 5%. We also had 13% where the YG3 detector was co-equal to the UV10 peak.  
+
+In this case, we have some clear signs of tandem degradation occuring within this single-color control. Whether this is a cell subset specific thing occuring in-vitro like we encountered previously with APC-Fire 810, or something at the level of the entire vial of antibody would be something we should investigate further. 
+:::
 
 #### BUV661
 
+Continuing with our journey through the UV fluorophores, lets check out the BUV661 fluorophore, which was conjugated to V-delta-2. In the context of the [original study](https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2025.1628145/full), the Vγ9Vδ2 T cells cells were one the main subsets of interest. However, given their frequency can vary person to person, they screened in advanced to make sure the donor used for PBMCs had high enough percentage to use cells as the single-color control. 
+
 ```{r}
-BUV661 <- LuciernagaIntegration(template=KeptCells[28,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BUV661 <- LuciernagaIntegration(template=KeptCells[5,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -493,6 +491,9 @@ Plot <- BUV661$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
+
+There is some variation on V7 across the 10% bins, but it is much more reminiscent of what we encountered for BUV563. 
+
 Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
 
 ```{r}
@@ -500,72 +501,39 @@ Plot <- BUV661$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
 
-Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
+Two signatures, slightly different at R1 and R2. Want to guess where the median ends up at?  
 
 ```{r}
 Plot <- BUV661$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
-
-```{r}
-Data <- BUV661$AveragedSignature_Data |>
-   filter(Cluster %in% c())
-```
-
-Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
+Since this antigen-fluorophore combination appears to be behaving, lets wrap up by checking the average vs. the reference signature. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Data <- BUV661$AveragedSignature_Data
 ```
 
 ```{r}
-QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+Plots <- QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=TRUE)
+
+Plots[[1]]
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+plotly::ggplotly(Plots[[2]])
 ```
 
-If we visualized the difference in these angles, we would see the following
-
-```{r}
-#| code-fold: TRUE
-cos_vals <- c(1)
-theta <- acos(cos_vals)
-
-df <- data.frame(
-  label = paste0("cos = ", cos_vals),
-  angle_deg = round(theta * 180 / pi, 1),
-  x = sin(theta),
-  y = cos(theta)
-)
-
-ggplot(df) +
-  geom_segment(aes(x = 0, y = 0, xend = x, yend = y, color = label),
-               arrow = arrow(length = unit(0.25, "cm")),
-               linewidth = 1) +
-  coord_fixed(xlim = c(-0.1, 1), ylim = c(-0.1, 1.1)) +
-  geom_hline(yintercept = 0, color = "grey80") +
-  geom_vline(xintercept = 0, color = "grey80") +
-  labs(x = NULL, y = NULL, color = "Vector",
-       title = NULL) +
-  theme_bw()
-```
-
-Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
-
-```{r}
-Plot <- BUV661$ProportionPlot
-plotly::ggplotly(Plot)
-```
+:::{.callout-tip title="Pass"}
+Overall, a little different compared to the reference signature (likely due to a bit of the residual autofluorescence around V7). We may want to adjust a bit the gate positioning to the right to reduce this contribution, but overall, not particularly far off from where it should be. 
+:::
 
 #### BUV737
 
+Next up, we have BUV737, conjugated to CXCR3. Seeing as it is a ligand, we note before starting that this may be similar scenario as what we anticipated encountering for CD62L or CCR4. 
+
 ```{r}
-BUV737 <- LuciernagaIntegration(template=KeptCells[22,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BUV737 <- LuciernagaIntegration(template=KeptCells[6,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -575,12 +543,18 @@ Plot <- BUV737$LinearSlices_Plot
 plotly::ggplotly(Plot)
 ```
 
-Having noted this, lets check out the `LuciernagaQC()` grouped individual cell normalized signatures output stored under "LuciernagaQC_Signatures". 
+It is immediately obvious we have step-ladder peaks for V7, B3 and UV7, something that we haven't quite seen to this extent for the previous fluorophores. Main thing to note is that the fluorophores two peaks (UV14 and R5) are remaining consistent. This is often what we see for particularly dim antigen-fluorophore combinations where the autofluorescence residual is substantial portion of the final area under the curve. 
+
+Lets break out `LuciernagaQC()` to group the individual cell normalized signatures, as stored in the "LuciernagaQC_Signatures" output in the list. 
 
 ```{r}
 Plot <- BUV737$LuciernagaQC_Signatures
 plotly::ggplotly(Plot)
 ```
+
+Wait a second, where did the autofluorescence peaks go? Well, there respective regions now look awfully flat, so it looks like after subtraction they ended up with negative values that ended up rounded to 0 (we can raise whether this was correct approach with the package maintainer). 
+
+Regardless, similar to CCR4, the primary detector peak UV14 appears consistent, but the R5 detector appears to similarly be experiencing step ladder, suggestive that the tandem is degrading. 
 
 Lets visualize this same plot in an alternative fashion, checking to see where the median signature ends up by comparison. 
 
@@ -589,18 +563,17 @@ Plot <- BUV737$LuciernagaQC_AmalgamatedPlot
 plotly::ggplotly(Plot)
 ```
 
-
-Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with minimal and maxinum autofluorescence contribution of the autofluorescence peak. 
+Some of the signatures appear erratic (generally typical of when few cells are present to begin with). Lets retrieve the underlying data for this plot, and keep the Average, as well as variants with reasonable appearing minimal and maxinum autofluorescence contribution of the R5 detector
 
 ```{r}
 Data <- BUV737$AveragedSignature_Data |>
-   filter(Cluster %in% c())
+   filter(Cluster %in% c("UV14_10-R5_03-B11_00","Average", "UV14_10-R5_07-B11_02"))
 ```
 
 Lets pass these individually to `QC_SimilarFluorophores()` and gage the difference. 
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV14_10-R5_03-B11_00", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
 ```{r}
@@ -608,14 +581,14 @@ QC_WhatsThis(x="Average", columnname="Cluster", data=Data, NumberHits=5, NumberD
 ```
 
 ```{r}
-QC_WhatsThis(x="", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
+QC_WhatsThis(x="UV14_10-R5_07-B11_02", columnname="Cluster", data=Data, NumberHits=5, NumberDetectors=64, returnPlots=FALSE)
 ```
 
-If we visualized the difference in these angles, we would see the following
+Overall, looking like the average is comparable to the reference control, with the R5 variants being similar to less extents. If we visualized the difference in these angles, we would see the following
 
 ```{r}
 #| code-fold: TRUE
-cos_vals <- c(1)
+cos_vals <- c(1, 0.91, 0.97)
 theta <- acos(cos_vals)
 
 df <- data.frame(
@@ -637,6 +610,8 @@ ggplot(df) +
   theme_bw()
 ```
 
+One thing to remember however, is that due to the rounding of the negatives, this is not necessarily what the signature looks like in practice, as there are negative peaks that would render the fluorophore very unsimilar to the reference had the negative values been left intact. 
+
 Before we go on, lets evaluate the proportion of cells within our positive gated region as distributed across our signature variants
 
 ```{r}
@@ -644,10 +619,16 @@ Plot <- BUV737$ProportionPlot
 plotly::ggplotly(Plot)
 ```
 
+:::{.callout-warning}
+So, while degraded products are present, at first glance looking at the proportions, it looks like this fluorophore has enough fluorophore in good shape to allow it to continue. However, as noted, not full story, since the autofluorescence peaks appeared to vanish entirely (do to `LuciernagaQC()` handling of negative values by default) showing limitation to the the generic `LuciernagaIntegration()` approach in this case. 
+
+In the actual panel implementation, as soon as this cell unmixing control was swapped to its bead unmixing control equivalent, panel unmixing substantially improved. 
+:::
+
 #### BUV805
 
 ```{r}
-BUV805 <- LuciernagaIntegration(template=KeptCells[15,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BUV805 <- LuciernagaIntegration(template=KeptCells[7,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
 
@@ -731,7 +712,7 @@ plotly::ggplotly(Plot)
 
 ```{r}
 #| eval: FALSE
-BV421 <- LuciernagaIntegration(template=KeptCells[5,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV421 <- LuciernagaIntegration(template=KeptCells[5,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -815,7 +796,7 @@ plotly::ggplotly(Plot)
 ```{r}
 #| eval: FALSE
 # bugged
-PacificBlue <- LuciernagaIntegration(template=KeptCells[23,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+PacificBlue <- LuciernagaIntegration(template=KeptCells[23,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -897,7 +878,7 @@ plotly::ggplotly(Plot)
 #### BV480
 
 ```{r}
-BV480 <- LuciernagaIntegration(template=KeptCells[7,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV480 <- LuciernagaIntegration(template=KeptCells[7,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -981,7 +962,7 @@ plotly::ggplotly(Plot)
 ```{r}
 #| eval: FALSE
 # bugged
-BV510 <- LuciernagaIntegration(template=KeptCells[16,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV510 <- LuciernagaIntegration(template=KeptCells[16,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1063,7 +1044,7 @@ plotly::ggplotly(Plot)
 #### BV605
 
 ```{r}
-BV605 <- LuciernagaIntegration(template=KeptCells[17,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV605 <- LuciernagaIntegration(template=KeptCells[17,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1145,7 +1126,7 @@ plotly::ggplotly(Plot)
 #### BV650
 
 ```{r}
-BV650 <- LuciernagaIntegration(template=KeptCells[3,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV650 <- LuciernagaIntegration(template=KeptCells[3,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1227,7 +1208,7 @@ plotly::ggplotly(Plot)
 #### BV711
 
 ```{r}
-BV711 <- LuciernagaIntegration(template=KeptCells[20,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV711 <- LuciernagaIntegration(template=KeptCells[20,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1309,7 +1290,7 @@ plotly::ggplotly(Plot)
 #### BV750
 
 ```{r}
-BV750 <- LuciernagaIntegration(template=KeptCells[24,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV750 <- LuciernagaIntegration(template=KeptCells[24,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1391,7 +1372,7 @@ plotly::ggplotly(Plot)
 #### BV786
 
 ```{r}
-BV786 <- LuciernagaIntegration(template=KeptCells[2,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+BV786 <- LuciernagaIntegration(template=KeptCells[2,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1477,7 +1458,7 @@ plotly::ggplotly(Plot)
 ```{r}
 #| eval: FALSE
 # bugged
-FITC <- LuciernagaIntegration(template=KeptCells[12,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+FITC <- LuciernagaIntegration(template=KeptCells[12,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1559,7 +1540,7 @@ plotly::ggplotly(Plot)
 #### Spark Blue 550
 
 ```{r}
-SparkBlue550 <- LuciernagaIntegration(template=KeptCells[13,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+SparkBlue550 <- LuciernagaIntegration(template=KeptCells[13,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1641,7 +1622,7 @@ plotly::ggplotly(Plot)
 #### PerCP-Cy5.5
 
 ```{r}
-WorstFluorophore <- LuciernagaIntegration(template=KeptCells[9,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+WorstFluorophore <- LuciernagaIntegration(template=KeptCells[9,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1725,7 +1706,7 @@ plotly::ggplotly(Plot)
 #### PE
 
 ```{r}
-PE <- LuciernagaIntegration(template=KeptCells[25,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+PE <- LuciernagaIntegration(template=KeptCells[25,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1807,7 +1788,7 @@ plotly::ggplotly(Plot)
 #### PE-Dazzle594
 
 ```{r}
-PEDazzle594 <- LuciernagaIntegration(template=KeptCells[27,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+PEDazzle594 <- LuciernagaIntegration(template=KeptCells[27,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1889,7 +1870,7 @@ plotly::ggplotly(Plot)
 #### PE-Cy5
 
 ```{r}
-PECy5 <- LuciernagaIntegration(template=KeptCells[8,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+PECy5 <- LuciernagaIntegration(template=KeptCells[8,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -1971,7 +1952,7 @@ plotly::ggplotly(Plot)
 #### PE-Vio770
 
 ```{r}
-PEVio770 <- LuciernagaIntegration(template=KeptCells[26,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+PEVio770 <- LuciernagaIntegration(template=KeptCells[26,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2057,7 +2038,7 @@ plotly::ggplotly(Plot)
 ```{r}
 #| eval: FALSE
 # Bugged
-APC <- LuciernagaIntegration(template=KeptCells[6,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+APC <- LuciernagaIntegration(template=KeptCells[6,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2141,7 +2122,7 @@ plotly::ggplotly(Plot)
 ```{r}
 #| eval: FALSE
 # bugged
-AF647 <- LuciernagaIntegration(template=KeptCells[11,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+AF647 <- LuciernagaIntegration(template=KeptCells[11,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2223,7 +2204,7 @@ plotly::ggplotly(Plot)
 #### APC-R700
 
 ```{r}
-APCR700 <- LuciernagaIntegration(template=KeptCells[4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+APCR700 <- LuciernagaIntegration(template=KeptCells[4,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2305,7 +2286,7 @@ plotly::ggplotly(Plot)
 #### Zombie NIR
 
 ```{r}
-ZombieNIR <- LuciernagaIntegration(template=KeptCells[29,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+ZombieNIR <- LuciernagaIntegration(template=KeptCells[29,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2387,7 +2368,7 @@ plotly::ggplotly(Plot)
 #### APC-Fire 750
 
 ```{r}
-APCFire750 <- LuciernagaIntegration(template=KeptCells[10,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+APCFire750 <- LuciernagaIntegration(template=KeptCells[10,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
@@ -2469,7 +2450,7 @@ plotly::ggplotly(Plot)
 #### APC-Fire 810
 
 ```{r}
-APCFire810 <- LuciernagaIntegration(template=KeptCells[14,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)
+APCFire810 <- LuciernagaIntegration(template=KeptCells[14,], gs=CellsSC_GatingSet, GuessSimilar=TRUE)[[1]] # Square brackets to loose list notation
 ```
 
 Lets first take a look at the "LinearSlices_Plot", to see what effect would have been on the signature if we had split the region we had grabbed in our "positive" gate into 10% bins across. 
